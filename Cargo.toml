@@ -1,0 +1,29 @@
+[package]
+name = "praxis"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Multi-agent critique and cross-examination pipeline for documents requiring intellectual rigor — provider-agnostic interaction-graph engine with pluggable LLM backends"
+license = "AGPL-3.0-only"
+repository = "https://github.com/industrial-algebra/Praxis"
+homepage = "https://github.com/industrial-algebra/Praxis"
+keywords = ["multi-agent", "critique", "peer-review", "llm", "evaluation"]
+categories = ["command-line-utilities", "text-processing", "development-tools"]
+readme = "README.md"
+
+[features]
+default = ["std"]
+std = []
+# Additive capability features (landed incrementally via TDD):
+cli = ["dep:clap"]                   # `praxis` binary + clap command line interface
+serde = ["dep:serde"]                # Serialize/Deserialize impls for core types
+json = ["serde", "dep:serde_json"]   # machine-readable JSON report output
+# parallel = ["dep:rayon"]           # batch critique via rayon (future)
+
+[dependencies]
+thiserror = "2"
+clap = { version = "4", features = ["derive"], optional = true }
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+
+[dev-dependencies]

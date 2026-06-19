@@ -1,0 +1,8 @@
+# Rust toolchain configuration for Praxis
+#
+# Following Industrial Algebra ecosystem conventions:
+# nightly channel + rustfmt + clippy components
+
+[toolchain]
+channel = "nightly"
+components = ["rustfmt", "clippy"]
