@@ -68,7 +68,7 @@ impl Runner {
     /// Executes the graph over the given subject, returning the transcript.
     ///
     /// For the v1 `Parallel` topology: the subject is broadcast to every critic
-    /// (in declared order) as a [`MessageKind::Critique`] prompt from
+    /// (in declared order) as a [`MessageKind::Prompt`] from
     /// [`SYSTEM_AGENT`]; each critic's response is appended to the transcript.
     ///
     /// # Errors
@@ -84,7 +84,7 @@ impl Runner {
             let prompt = Message::new(
                 system.clone(),
                 Some(critic_id.clone()),
-                MessageKind::Critique,
+                MessageKind::Prompt,
                 subject.text().to_owned(),
             );
 

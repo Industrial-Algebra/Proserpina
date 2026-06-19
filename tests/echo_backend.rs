@@ -17,24 +17,42 @@ fn echo_agent_exposes_its_id_and_persona() {
 }
 
 #[test]
-fn echo_agent_mirrors_incoming_message() {
+fn echo_agent_produces_a_critique_when_prompted() {
     let mut agent = EchoAgent::new(AgentId::new("critic-a"), Persona::new("Critic A"));
-    let incoming = Message::new(
+    let prompt = Message::new(
         AgentId::new("system"),
         Some(AgentId::new("critic-a")),
-        MessageKind::Critique,
+        MessageKind::Prompt,
         "Critique the roadmap.",
+    );
+
+    let reply = agent.respond(&prompt).expect("echo never fails");
+
+    // Authored by the agent itself.
+    assert_eq!(reply.sender(), &AgentId::new("critic-a"));
+    // Addressed back to whoever prompted it.
+    assert_eq!(reply.recipient(), Some(&AgentId::new("system")));
+    // A critic produces a Critique in response to a Prompt.
+    assert!(matches!(reply.kind(), MessageKind::Critique));
+    // The subject text is echoed into the critique.
+    assert_eq!(reply.text(), "Critique the roadmap.");
+}
+
+#[test]
+fn echo_agent_mirrors_non_prompt_kinds_unchanged() {
+    // For any kind other than Prompt, the echo backend mirrors the kind.
+    let mut agent = EchoAgent::new(AgentId::new("critic-a"), Persona::new("Critic A"));
+    let incoming = Message::new(
+        AgentId::new("critic-b"),
+        Some(AgentId::new("critic-a")),
+        MessageKind::Rebuttal,
+        "Your claim is unsupported.",
     );
 
     let reply = agent.respond(&incoming).expect("echo never fails");
 
-    // Authored by the agent itself.
-    assert_eq!(reply.sender(), &AgentId::new("critic-a"));
-    // Addressed back to whoever sent the incoming message.
-    assert_eq!(reply.recipient(), Some(&AgentId::new("system")));
-    // Kind and text are mirrored unchanged.
-    assert!(matches!(reply.kind(), MessageKind::Critique));
-    assert_eq!(reply.text(), "Critique the roadmap.");
+    assert!(matches!(reply.kind(), MessageKind::Rebuttal));
+    assert_eq!(reply.text(), "Your claim is unsupported.");
 }
 
 #[test]
