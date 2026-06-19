@@ -27,3 +27,8 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
+
+[[bin]]
+name = "praxis"
+path = "src/main.rs"
+required-features = ["cli"]
