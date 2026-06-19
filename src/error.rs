@@ -8,6 +8,8 @@
 
 use thiserror::Error;
 
+use crate::agent::AgentId;
+
 /// The single error type for all of Praxis.
 ///
 /// Variants are deliberately coarse at the scaffold stage and will gain
@@ -26,6 +28,12 @@ pub enum PraxisError {
         /// Backend-supplied explanation.
         detail: String,
     },
+
+    /// A graph node referenced an [`AgentId`](crate::agent::AgentId) for which
+    /// no agent was registered with the
+    /// [`Runner`](crate::runner::Runner).
+    #[error("no agent registered for id `{0}`")]
+    MissingAgent(AgentId),
 }
 
 impl PraxisError {
@@ -43,5 +51,18 @@ impl PraxisError {
             agent_id: agent_id.into(),
             detail: detail.into(),
         }
+    }
+
+    /// Convenience constructor for [`PraxisError::MissingAgent`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use praxis::{AgentId, PraxisError};
+    /// let err = PraxisError::missing_agent(AgentId::new("ghost"));
+    /// assert!(format!("{err}").contains("ghost"));
+    /// ```
+    pub fn missing_agent(id: AgentId) -> Self {
+        Self::MissingAgent(id)
     }
 }

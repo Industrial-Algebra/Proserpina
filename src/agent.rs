@@ -4,6 +4,7 @@
 //! The provider boundary: the [`Agent`] trait and [`AgentId`].
 
 use crate::persona::Persona;
+use std::fmt;
 
 /// A stable identifier for an agent within a single Praxis run.
 ///
@@ -30,6 +31,12 @@ impl AgentId {
     /// The identifying name as a string slice.
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+impl fmt::Display for AgentId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
     }
 }
 

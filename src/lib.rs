@@ -47,13 +47,19 @@
 mod agent;
 mod backend;
 mod error;
+mod graph;
 mod message;
 mod persona;
+mod runner;
 mod subject;
+mod transcript;
 
 pub use agent::{Agent, AgentId};
 pub use backend::EchoAgent;
 pub use error::PraxisError;
+pub use graph::{InteractionGraph, Topology};
 pub use message::{Message, MessageKind};
 pub use persona::Persona;
+pub use runner::Runner;
 pub use subject::Subject;
+pub use transcript::Transcript;
