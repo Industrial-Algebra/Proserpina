@@ -43,3 +43,15 @@
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
+
+mod agent;
+mod error;
+mod message;
+mod persona;
+mod subject;
+
+pub use agent::{Agent, AgentId};
+pub use error::PraxisError;
+pub use message::{Message, MessageKind};
+pub use persona::Persona;
+pub use subject::Subject;
