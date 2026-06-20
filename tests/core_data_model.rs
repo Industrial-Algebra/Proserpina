@@ -83,10 +83,12 @@ fn message_records_sender_recipient_kind_and_text() {
 }
 
 #[test]
-fn message_kind_is_exhaustive_with_five_variants() {
-    // The design pins MessageKind to exactly these five variants; a change
-    // here should be a conscious decision, not a silent addition.
+fn message_kind_is_exhaustive_with_six_variants() {
+    // The design pins MessageKind to a known set; adding a variant is a
+    // conscious decision, not a silent addition. Prompt is the subject
+    // broadcast to critics (distinct from a Critique, which is a finding).
     let kinds = [
+        MessageKind::Prompt,
         MessageKind::Critique,
         MessageKind::Rebuttal,
         MessageKind::Question,

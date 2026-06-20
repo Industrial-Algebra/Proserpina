@@ -3,22 +3,25 @@
 
 //! The deterministic echo backend.
 //!
-//! [`EchoAgent`] mirrors every incoming [`crate::message::Message`]: it
-//! re-stamps the sender as itself, addresses the reply back to the original
-//! sender, and echoes the original kind and text unchanged. Output is fully
-//! determined by `(persona, input)`, with no external state, which makes it
-//! the reference backend for testing the engine end-to-end without any LLM
-//! dependency.
+//! [`EchoAgent`] mirrors incoming [`crate::message::Message`]s — with one
+//! adjustment: a [`MessageKind::Prompt`] (the subject broadcast) elicits a
+//! [`MessageKind::Critique`], because a critic's job is to critique, not to
+//! echo the prompt. Every other kind is mirrored unchanged: re-stamped as
+//! authored by the agent, addressed back to the original sender, with the
+//! original kind and text. Output is fully determined by `(persona, input)`,
+//! with no external state, which makes this the reference backend for testing
+//! the engine end-to-end without any LLM dependency.
 
 use crate::agent::{Agent, AgentId};
-use crate::message::Message;
+use crate::message::{Message, MessageKind};
 use crate::persona::Persona;
 
 /// A backend that deterministically echoes incoming messages.
 ///
 /// Construct with [`EchoAgent::new`] from an [`AgentId`] and a [`Persona`].
-/// Every call to [`Agent::respond`] returns a message authored by this agent
-/// that mirrors the input's kind and text.
+/// Each call to [`Agent::respond`] returns a message authored by this agent
+/// that either critiques (for a [`MessageKind::Prompt`]) or mirrors (any other
+/// kind) the input's kind and text.
 #[derive(Debug, Clone)]
 pub struct EchoAgent {
     id: AgentId,
@@ -53,13 +56,18 @@ impl Agent for EchoAgent {
     }
 
     fn respond(&mut self, msg: &Message) -> Result<Message, crate::error::PraxisError> {
-        // Mirror the incoming message: re-stamp as authored by this agent,
-        // address the reply back to the original sender, and echo the kind
-        // and text unchanged. Fully determined by (self, msg) — no hidden state.
+        // Re-stamp the reply as authored by this agent and address it back to
+        // the original sender. A critic produces a Critique in response to a
+        // Prompt; any other kind is mirrored unchanged. Fully determined by
+        // (self, msg) — no hidden state.
+        let kind = match msg.kind() {
+            MessageKind::Prompt => MessageKind::Critique,
+            other => other,
+        };
         Ok(Message::new(
             self.id.clone(),
             Some(msg.sender().clone()),
-            msg.kind(),
+            kind,
             msg.text().to_owned(),
         ))
     }

@@ -11,6 +11,10 @@ use crate::agent::AgentId;
 /// synthesizer, and adding one is a conscious decision (not a silent fall-through).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageKind {
+    /// The subject broadcast to critics — a prompt to critique, not itself a
+    /// finding. Distinct from [`MessageKind::Critique`] so the synthesizer can
+    /// fold critiques while skipping prompts unambiguously.
+    Prompt,
     /// A substantive critique of the subject or another message.
     Critique,
     /// A counter-argument to a prior [`MessageKind::Critique`].
@@ -30,6 +34,7 @@ impl MessageKind {
     /// lands); kept stable so external tooling can rely on it.
     pub fn label(&self) -> &'static str {
         match self {
+            MessageKind::Prompt => "prompt",
             MessageKind::Critique => "critique",
             MessageKind::Rebuttal => "rebuttal",
             MessageKind::Question => "question",
@@ -45,6 +50,7 @@ impl MessageKind {
     /// Returns `Err` with the unrecognized label if `text` is not a known kind.
     pub fn from_label(text: &str) -> Result<Self, &'static str> {
         match text {
+            "prompt" => Ok(MessageKind::Prompt),
             "critique" => Ok(MessageKind::Critique),
             "rebuttal" => Ok(MessageKind::Rebuttal),
             "question" => Ok(MessageKind::Question),

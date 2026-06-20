@@ -50,6 +50,7 @@ mod error;
 mod graph;
 mod message;
 mod persona;
+mod report;
 mod runner;
 mod subject;
 mod transcript;
@@ -60,6 +61,10 @@ pub use error::PraxisError;
 pub use graph::{InteractionGraph, Topology};
 pub use message::{Message, MessageKind};
 pub use persona::Persona;
+pub use report::{Finding, Report, Severity};
 pub use runner::Runner;
 pub use subject::Subject;
 pub use transcript::Transcript;
+
+#[cfg(feature = "cli")]
+pub mod cli;
