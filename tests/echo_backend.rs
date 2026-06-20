@@ -39,7 +39,28 @@ fn echo_agent_produces_a_critique_when_prompted() {
 }
 
 #[test]
-fn echo_agent_mirrors_non_prompt_kinds_unchanged() {
+fn echo_agent_rebuts_an_incoming_critique() {
+    // Cross-examination: when a critic hears another critic's critique, the
+    // echo backend rebuts it (rather than mirroring it as another critique).
+    // This is what makes the rounds topology semantically meaningful.
+    let mut agent = EchoAgent::new(AgentId::new("critic-a"), Persona::new("Critic A"));
+    let critique = Message::new(
+        AgentId::new("critic-b"),
+        Some(AgentId::new("critic-a")),
+        MessageKind::Critique,
+        "The proof is unsound.",
+    );
+
+    let reply = agent.respond(&critique).expect("echo never fails");
+
+    assert_eq!(reply.sender(), &AgentId::new("critic-a"));
+    assert_eq!(reply.recipient(), Some(&AgentId::new("critic-b")));
+    assert!(matches!(reply.kind(), MessageKind::Rebuttal));
+    assert_eq!(reply.text(), "The proof is unsound.");
+}
+
+#[test]
+fn echo_agent_mirrors_non_critique_kinds_unchanged() {
     // For any kind other than Prompt, the echo backend mirrors the kind.
     let mut agent = EchoAgent::new(AgentId::new("critic-a"), Persona::new("Critic A"));
     let incoming = Message::new(

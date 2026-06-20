@@ -23,9 +23,9 @@ use crate::transcript::Transcript;
 
 /// The reserved sender identity for system-originated prompts.
 ///
-/// In a parallel topology the subject is broadcast to every critic as a
-/// [`MessageKind::Critique`] message authored by `system`; critics reply back
-/// to `system` (per the echo contract and the synthesizer routing).
+/// The subject is broadcast to every critic as a [`MessageKind::Prompt`]
+/// message authored by `system`; critics reply back to `system` (per the echo
+/// contract and the synthesizer routing).
 pub const SYSTEM_AGENT: &str = "system";
 
 /// Executes an [`InteractionGraph`] against a registry of agents.
@@ -67,9 +67,13 @@ impl Runner {
 
     /// Executes the graph over the given subject, returning the transcript.
     ///
-    /// For the v1 `Parallel` topology: the subject is broadcast to every critic
-    /// (in declared order) as a [`MessageKind::Prompt`] from
-    /// [`SYSTEM_AGENT`]; each critic's response is appended to the transcript.
+    /// Dispatches on the graph's topology:
+    /// - [`InteractionGraph::Parallel`] — broadcasts the subject to each critic
+    ///   and collects one critique each.
+    /// - [`InteractionGraph::Rounds`] — round 1 as above; subsequent rounds
+    ///   route each critic the prior round's messages from the *other* critics
+    ///   (a critique elicits a rebuttal), stopping early once a round produces
+    ///   no rebuttals and never exceeding `max_rounds`.
     ///
     /// # Errors
     ///
@@ -77,24 +81,96 @@ impl Runner {
     /// respond, or [`PraxisError::MissingAgent`] if a graph node has no agent
     /// registered under its id.
     pub fn execute(&mut self, subject: &Subject) -> Result<Transcript, PraxisError> {
-        let mut transcript = Transcript::new();
         let system = AgentId::new(SYSTEM_AGENT);
+        match self.graph.clone() {
+            InteractionGraph::Parallel { .. } => self.execute_parallel(subject, &system),
+            InteractionGraph::Rounds { max_rounds, .. } => {
+                self.execute_rounds(subject, &system, max_rounds)
+            }
+        }
+    }
 
-        for critic_id in self.graph.critics() {
+    /// Returns a mutable reference to the agent registered under `id`.
+    fn agent_mut(&mut self, id: &AgentId) -> Result<&mut Box<dyn Agent>, PraxisError> {
+        self.agents
+            .get_mut(id)
+            .ok_or_else(|| PraxisError::missing_agent(id.clone()))
+    }
+
+    fn execute_parallel(
+        &mut self,
+        subject: &Subject,
+        system: &AgentId,
+    ) -> Result<Transcript, PraxisError> {
+        let mut transcript = Transcript::new();
+        let critics: Vec<AgentId> = self.graph.critics().to_vec();
+
+        for critic_id in &critics {
             let prompt = Message::new(
                 system.clone(),
                 Some(critic_id.clone()),
                 MessageKind::Prompt,
                 subject.text().to_owned(),
             );
-
-            let agent = self
-                .agents
-                .get_mut(critic_id)
-                .ok_or_else(|| PraxisError::missing_agent(critic_id.clone()))?;
-
-            let response = agent.respond(&prompt)?;
+            let response = self.agent_mut(critic_id)?.respond(&prompt)?;
             transcript.push(response);
+        }
+        Ok(transcript)
+    }
+
+    fn execute_rounds(
+        &mut self,
+        subject: &Subject,
+        system: &AgentId,
+        max_rounds: usize,
+    ) -> Result<Transcript, PraxisError> {
+        let mut transcript = Transcript::new();
+        if max_rounds == 0 {
+            return Ok(transcript);
+        }
+        let critics: Vec<AgentId> = self.graph.critics().to_vec();
+
+        // Round 1: subject prompt -> critique, per critic.
+        for critic_id in &critics {
+            let prompt = Message::new(
+                system.clone(),
+                Some(critic_id.clone()),
+                MessageKind::Prompt,
+                subject.text().to_owned(),
+            );
+            let response = self.agent_mut(critic_id)?.respond(&prompt)?;
+            transcript.push(response);
+        }
+
+        // Rounds 2..=max_rounds: each critic receives the prior round's
+        // messages from the OTHER critics and responds. Stop early once a
+        // round produces no rebuttals (the panel has converged).
+        let mut prev_round_start = 0usize;
+        for _round in 2..=max_rounds {
+            // Snapshot the prior round so we can borrow `agents` mutably while
+            // iterating it (cloning is cheap; messages are small).
+            let prior_round: Vec<Message> =
+                transcript.iter().skip(prev_round_start).cloned().collect();
+            let current_round_start = transcript.len();
+            let mut rebuttals_this_round = 0usize;
+
+            for critic_id in &critics {
+                for prior_msg in &prior_round {
+                    if prior_msg.sender() == critic_id {
+                        continue; // a critic does not rebut itself
+                    }
+                    let response = self.agent_mut(critic_id)?.respond(prior_msg)?;
+                    if matches!(response.kind(), MessageKind::Rebuttal) {
+                        rebuttals_this_round += 1;
+                    }
+                    transcript.push(response);
+                }
+            }
+
+            if rebuttals_this_round == 0 {
+                break; // converged: nothing left to challenge
+            }
+            prev_round_start = current_round_start;
         }
 
         Ok(transcript)
