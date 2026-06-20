@@ -4,8 +4,8 @@
 //! Integration tests for the interaction graph and runner.
 
 use praxis::{
-    AgentId, EchoAgent, InteractionGraph, Message, MessageKind, Persona, Runner, Subject, Topology,
-    Transcript,
+    Agent, AgentId, EchoAgent, InteractionGraph, Message, MessageKind, Persona, Runner, Subject,
+    Topology, Transcript,
 };
 
 #[test]
@@ -47,6 +47,23 @@ fn parallel_topology_builds_graph_with_the_given_critics() {
 
     let node_names: Vec<&str> = graph.critics().iter().map(|id| id.as_str()).collect();
     assert_eq!(node_names, vec!["critic-a", "critic-b", "critic-c"]);
+}
+
+#[test]
+fn rounds_topology_builds_graph_with_critics_and_max_rounds() {
+    let critics = vec![AgentId::new("a"), AgentId::new("b")];
+    let graph = InteractionGraph::from(Topology::rounds(critics.clone(), 3));
+
+    assert_eq!(graph.critics(), critics.as_slice());
+    assert_eq!(graph.max_rounds(), Some(3));
+}
+
+#[test]
+fn parallel_graph_has_no_round_cap() {
+    // A parallel graph is a degenerate single-round run; max_rounds is None
+    // to distinguish it from an explicit rounds topology.
+    let graph = InteractionGraph::from(Topology::parallel(vec![AgentId::new("a")]));
+    assert_eq!(graph.max_rounds(), None);
 }
 
 #[test]
@@ -123,4 +140,137 @@ fn runner_errors_when_a_critic_has_no_registered_agent() {
     let err = result.expect_err("should fail on missing agent");
     let rendered = format!("{err}");
     assert!(rendered.contains("absent"));
+}
+
+#[test]
+fn runner_executes_rounds_topology_critique_then_rebuttal() {
+    // Two critics, two rounds: round 1 produces a critique each; round 2 each
+    // critic receives the other's critique and rebuts it. Then max_rounds is
+    // reached and the run stops.
+    let graph = InteractionGraph::from(Topology::rounds(
+        vec![AgentId::new("critic-a"), AgentId::new("critic-b")],
+        2,
+    ));
+    let mut runner = Runner::new(graph)
+        .with_agent(EchoAgent::new(AgentId::new("critic-a"), Persona::new("A")))
+        .with_agent(EchoAgent::new(AgentId::new("critic-b"), Persona::new("B")));
+
+    let transcript = runner
+        .execute(&Subject::from_markdown("the claim", "c.md"))
+        .expect("echo run never fails");
+
+    let messages: Vec<_> = transcript.iter().collect();
+    assert_eq!(messages.len(), 4, "2 critiques + 2 rebuttals");
+
+    // Round 1: critiques in critic order.
+    assert_eq!(messages[0].sender(), &AgentId::new("critic-a"));
+    assert!(matches!(messages[0].kind(), MessageKind::Critique));
+    assert_eq!(messages[1].sender(), &AgentId::new("critic-b"));
+    assert!(matches!(messages[1].kind(), MessageKind::Critique));
+
+    // Round 2: each critic rebuts the other's critique, addressed to that critic.
+    assert_eq!(messages[2].sender(), &AgentId::new("critic-a"));
+    assert_eq!(messages[2].recipient(), Some(&AgentId::new("critic-b")));
+    assert!(matches!(messages[2].kind(), MessageKind::Rebuttal));
+    assert_eq!(messages[3].sender(), &AgentId::new("critic-b"));
+    assert_eq!(messages[3].recipient(), Some(&AgentId::new("critic-a")));
+    assert!(matches!(messages[3].kind(), MessageKind::Rebuttal));
+}
+
+#[test]
+fn runner_stops_early_when_a_round_produces_no_rebuttals() {
+    // Echo always rebuts, so it never converges. Use a conceding agent that
+    // produces Concessions (not Rebuttals) in response to a critique: round 2
+    // then produces zero rebuttals, so the run must stop before max_rounds.
+    let graph = InteractionGraph::from(Topology::rounds(
+        vec![AgentId::new("a"), AgentId::new("b")],
+        5, // generously high; convergence should stop after round 2
+    ));
+    let mut runner = Runner::new(graph)
+        .with_agent(ConcedingAgent::new(AgentId::new("a")))
+        .with_agent(ConcedingAgent::new(AgentId::new("b")));
+
+    let transcript = runner
+        .execute(&Subject::from_markdown("claim", "c.md"))
+        .expect("conceding run never fails");
+
+    let messages: Vec<_> = transcript.iter().collect();
+    // Round 1: 2 critiques. Round 2: 2 concessions (no rebuttals) -> stop.
+    assert_eq!(
+        messages.len(),
+        4,
+        "should stop after round 2 despite max_rounds=5"
+    );
+    assert!(matches!(messages[0].kind(), MessageKind::Critique));
+    assert!(matches!(messages[1].kind(), MessageKind::Critique));
+    assert!(matches!(messages[2].kind(), MessageKind::Concession));
+    assert!(matches!(messages[3].kind(), MessageKind::Concession));
+}
+
+#[test]
+fn runner_runs_to_max_rounds_when_rebuttals_keep_coming() {
+    // Echo always rebuts (never converges), so it must run all the way to
+    // max_rounds. Two critics, three rounds: 2 critiques + 2 rebuttals + 2
+    // rebuttals-of-rebuttals = 6 messages.
+    let graph = InteractionGraph::from(Topology::rounds(
+        vec![AgentId::new("a"), AgentId::new("b")],
+        3,
+    ));
+    let mut runner = Runner::new(graph)
+        .with_agent(EchoAgent::new(AgentId::new("a"), Persona::new("A")))
+        .with_agent(EchoAgent::new(AgentId::new("b"), Persona::new("B")));
+
+    let transcript = runner
+        .execute(&Subject::from_markdown("claim", "c.md"))
+        .expect("echo run never fails");
+
+    assert_eq!(transcript.len(), 6, "2 per round x 3 rounds");
+    // Round boundaries: critiques (0..2), rebuttals (2..4), rebuttals (4..6).
+    for msg in transcript.iter().take(2) {
+        assert!(matches!(msg.kind(), MessageKind::Critique));
+    }
+    for msg in transcript.iter().skip(2) {
+        assert!(matches!(msg.kind(), MessageKind::Rebuttal));
+    }
+}
+
+/// A test-only agent that concedes (instead of rebutting) when it hears a
+/// critique. Used to exercise the rounds convergence early-stop.
+struct ConcedingAgent {
+    id: AgentId,
+    persona: Persona,
+}
+
+impl ConcedingAgent {
+    fn new(id: AgentId) -> Self {
+        Self {
+            id: id.clone(),
+            persona: Persona::new("Conceding"),
+        }
+    }
+}
+
+impl Agent for ConcedingAgent {
+    fn id(&self) -> &AgentId {
+        &self.id
+    }
+
+    fn persona(&self) -> &Persona {
+        &self.persona
+    }
+
+    fn respond(&mut self, msg: &Message) -> Result<Message, praxis::PraxisError> {
+        use praxis::MessageKind as K;
+        let kind = match msg.kind() {
+            K::Prompt => K::Critique,
+            K::Critique => K::Concession,
+            other => other,
+        };
+        Ok(Message::new(
+            self.id.clone(),
+            Some(msg.sender().clone()),
+            kind,
+            msg.text().to_owned(),
+        ))
+    }
 }
