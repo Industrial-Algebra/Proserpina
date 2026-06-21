@@ -3,10 +3,15 @@
 
 //! Backends: concrete implementations of [`crate::agent::Agent`].
 //!
-//! The echo backend is the deterministic, dependency-free reference backend
-//! used to drive the engine in tests. Real backends (CLI subprocess, HTTP API,
-//! MCP) land in later feature-gated modules.
+//! - [`echo::EchoAgent`] is the deterministic, dependency-free reference
+//!   backend used to drive the engine in tests.
+//! - The HTTP backend ([`http`] module, behind the `backend-http` feature)
+//!   calls an OpenAI-compatible chat-completions endpoint and is the first
+//!   real LLM backend.
 
 pub mod echo;
+
+#[cfg(feature = "backend-http")]
+pub mod http;
 
 pub use echo::EchoAgent;
