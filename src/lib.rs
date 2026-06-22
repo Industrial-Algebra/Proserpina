@@ -45,7 +45,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod agent;
-mod backend;
+pub mod backend;
 mod error;
 mod graph;
 mod message;
