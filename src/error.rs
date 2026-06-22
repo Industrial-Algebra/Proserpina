@@ -40,6 +40,25 @@ pub enum PraxisError {
     /// Carries the names of the providers that were tried.
     #[error("no API keys found for any provider (tried: {})", .0.join(", "))]
     NoAuthedProviders(Vec<String>),
+
+    /// The credentials config file exists but could not be read or parsed.
+    #[error("malformed credentials config `{path}`: {detail}")]
+    MalformedCredentials {
+        /// The config file path (or `<str>` for inline parsing).
+        path: String,
+        /// The underlying read/parse error.
+        detail: String,
+    },
+
+    /// A custom provider (not in the registry) was declared in the config but
+    /// is missing a required field.
+    #[error("custom provider `{name}` is missing required field(s): {}", .missing.join(", "))]
+    IncompleteCustomProvider {
+        /// The custom provider's name.
+        name: String,
+        /// The missing fields (subset of `api_key`, `model`, `base_url`).
+        missing: Vec<&'static str>,
+    },
 }
 
 impl PraxisError {
@@ -83,5 +102,23 @@ impl PraxisError {
     /// ```
     pub fn no_authed_providers(tried: Vec<String>) -> Self {
         Self::NoAuthedProviders(tried)
+    }
+
+    /// Convenience constructor for [`PraxisError::MalformedCredentials`].
+    ///
+    /// Accepts any error-like `detail` (the read/parse error's display).
+    pub fn malformed_credentials(path: impl Into<String>, detail: impl std::fmt::Display) -> Self {
+        Self::MalformedCredentials {
+            path: path.into(),
+            detail: detail.to_string(),
+        }
+    }
+
+    /// Convenience constructor for [`PraxisError::IncompleteCustomProvider`].
+    pub fn incomplete_custom_provider(name: impl Into<String>, missing: Vec<&'static str>) -> Self {
+        Self::IncompleteCustomProvider {
+            name: name.into(),
+            missing,
+        }
     }
 }

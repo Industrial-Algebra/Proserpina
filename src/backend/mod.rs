@@ -10,8 +10,14 @@
 //!   real LLM backend.
 //! - The multi-provider roster ([`roster`] module, behind the `backend-http`
 //!   feature) assigns authed providers to critic personas at random.
+//! - The credentials config ([`credentials`] module, behind the `backend-http`
+//!   feature) reads provider keys and model overrides from a TOML file so
+//!   Praxis can reach providers whose keys aren't in the environment.
 
 pub mod echo;
+
+#[cfg(feature = "backend-http")]
+pub mod credentials;
 
 #[cfg(feature = "backend-http")]
 pub mod http;

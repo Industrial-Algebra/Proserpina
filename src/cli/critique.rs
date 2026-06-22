@@ -71,21 +71,25 @@ pub fn run_critique_echo(input: &str, source: &str) -> Result<String, PraxisErro
 /// the environment. Returns [`PraxisError::AgentFailure`] if a provider fails
 /// to respond.
 #[cfg(all(feature = "cli", feature = "backend-http"))]
-pub fn run_critique(input: &str, source: &str, seed: u64) -> Result<String, PraxisError> {
+pub fn run_critique(
+    input: &str,
+    source: &str,
+    seed: u64,
+    config_path: Option<&std::path::Path>,
+) -> Result<String, PraxisError> {
+    use crate::backend::credentials::authed_configs_with;
     use crate::backend::http::HttpAgent;
     use crate::backend::roster::{random_roster, Provider};
     use rand::SeedableRng;
 
     let personas = default_personas();
-    let providers = Provider::registry();
-
-    let configs: Vec<_> = providers
-        .iter()
-        .filter_map(|p| p.config_from_env())
-        .collect();
+    let configs = authed_configs_with(config_path)?;
     if configs.is_empty() {
         return Err(PraxisError::no_authed_providers(
-            providers.iter().map(|p| p.name().to_owned()).collect(),
+            Provider::registry()
+                .iter()
+                .map(|p| p.name().to_owned())
+                .collect(),
         ));
     }
 
