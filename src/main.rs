@@ -10,8 +10,6 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 
-use praxis::cli::run_critique;
-
 /// Cross-examine a document with a panel of critic personas.
 #[derive(Debug, Parser)]
 #[command(name = "praxis", version, about, long_about = None)]
@@ -29,13 +27,26 @@ enum Command {
         /// Where to write the critique report. Defaults to stdout.
         #[arg(short, long)]
         out: Option<PathBuf>,
+        /// Use the offline echo backend (no API keys, no network). For testing.
+        #[arg(long)]
+        echo: bool,
+        /// RNG seed for provider assignment (roster path). If omitted, a random
+        /// seed is generated and printed in the report so the run is
+        /// reproducible. Ignored by --echo.
+        #[arg(long)]
+        seed: Option<u64>,
     },
 }
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
     match cli.command {
-        Command::Critique { input, out } => match critique(&input) {
+        Command::Critique {
+            input,
+            out,
+            echo,
+            seed,
+        } => match critique(&input, echo, seed) {
             Ok(markdown) => {
                 match out {
                     Some(path) => {
@@ -56,9 +67,32 @@ fn main() -> ExitCode {
     }
 }
 
-fn critique(input: &std::path::Path) -> Result<String, praxis::PraxisError> {
+fn critique(
+    input: &std::path::Path,
+    echo: bool,
+    seed: Option<u64>,
+) -> Result<String, praxis::PraxisError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input)
         .map_err(|e| praxis::PraxisError::agent_failure(input.to_string_lossy(), e.to_string()))?;
-    run_critique(&text, &source)
+
+    if echo {
+        return praxis::cli::run_critique_echo(&text, &source);
+    }
+
+    #[cfg(feature = "backend-http")]
+    {
+        // Generate a seed if none given, so every roster run is reproducible.
+        let seed = seed.unwrap_or_else(rand::random);
+        praxis::cli::run_critique(&text, &source, seed)
+    }
+
+    #[cfg(not(feature = "backend-http"))]
+    {
+        // No HTTP backend compiled in: fall back to echo with a notice.
+        let _ = seed;
+        let mut report = praxis::cli::run_critique_echo(&text, &source)?;
+        report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
+        Ok(report)
+    }
 }

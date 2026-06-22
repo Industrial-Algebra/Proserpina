@@ -34,6 +34,12 @@ pub enum PraxisError {
     /// [`Runner`](crate::runner::Runner).
     #[error("no agent registered for id `{0}`")]
     MissingAgent(AgentId),
+
+    /// No provider in a roster had its API key set in the environment.
+    ///
+    /// Carries the names of the providers that were tried.
+    #[error("no API keys found for any provider (tried: {})", .0.join(", "))]
+    NoAuthedProviders(Vec<String>),
 }
 
 impl PraxisError {
@@ -64,5 +70,18 @@ impl PraxisError {
     /// ```
     pub fn missing_agent(id: AgentId) -> Self {
         Self::MissingAgent(id)
+    }
+
+    /// Convenience constructor for [`PraxisError::NoAuthedProviders`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use praxis::PraxisError;
+    /// let err = PraxisError::no_authed_providers(vec!["deepseek".to_owned()]);
+    /// assert!(format!("{err}").contains("deepseek"));
+    /// ```
+    pub fn no_authed_providers(tried: Vec<String>) -> Self {
+        Self::NoAuthedProviders(tried)
     }
 }

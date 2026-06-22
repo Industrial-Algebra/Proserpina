@@ -8,10 +8,15 @@
 //! - The HTTP backend ([`http`] module, behind the `backend-http` feature)
 //!   calls an OpenAI-compatible chat-completions endpoint and is the first
 //!   real LLM backend.
+//! - The multi-provider roster ([`roster`] module, behind the `backend-http`
+//!   feature) assigns authed providers to critic personas at random.
 
 pub mod echo;
 
 #[cfg(feature = "backend-http")]
 pub mod http;
+
+#[cfg(feature = "backend-http")]
+pub mod roster;
 
 pub use echo::EchoAgent;
