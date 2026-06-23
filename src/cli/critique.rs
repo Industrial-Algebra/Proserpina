@@ -76,10 +76,12 @@ pub fn run_critique(
     source: &str,
     seed: u64,
     config_path: Option<&std::path::Path>,
+    json: bool,
 ) -> Result<String, PraxisError> {
     use crate::backend::credentials::authed_configs_with;
     use crate::backend::http::HttpAgent;
     use crate::backend::roster::{random_roster, Provider};
+    use crate::summary::summarize;
     use rand::SeedableRng;
 
     let personas = default_personas();
@@ -107,9 +109,30 @@ pub fn run_critique(
 
     let subject = Subject::from_markdown(input, source);
     let transcript = runner.execute(&subject)?;
-    let report = Report::from_transcript(&transcript);
-    let mut markdown = report.to_markdown_with_source(subject.source());
-    // Record the seed so the run is reproducible.
-    markdown.push_str(&format!("\n_Reproducibility: seed `{seed}`_\n"));
-    Ok(markdown)
+
+    // Summarizer pass: structure the transcript into rich findings via the
+    // first authed config. Graceful on empty (yields no findings).
+    let findings = summarize(&subject, &transcript, &configs[0]).unwrap_or_default();
+    let mut report = Report::new();
+    for f in findings {
+        report.push_finding(f);
+    }
+
+    let mut body = if json {
+        #[cfg(feature = "json")]
+        {
+            report.to_json()
+        }
+        #[cfg(not(feature = "json"))]
+        {
+            report.to_markdown_with_source(subject.source())
+        }
+    } else {
+        report.to_markdown_with_source(subject.source())
+    };
+    if !json {
+        // Record the seed on the markdown path so the run is reproducible.
+        body.push_str(&format!("\n_Reproducibility: seed `{seed}`_\n"));
+    }
+    Ok(body)
 }

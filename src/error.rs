@@ -41,6 +41,10 @@ pub enum PraxisError {
     #[error("no API keys found for any provider (tried: {})", .0.join(", "))]
     NoAuthedProviders(Vec<String>),
 
+    /// The summarizer LLM call failed (network, HTTP, or parse-to-empty).
+    #[error("summarizer failed: {detail}")]
+    SummaryFailed { detail: String },
+
     /// The credentials config file exists but could not be read or parsed.
     #[error("malformed credentials config `{path}`: {detail}")]
     MalformedCredentials {
@@ -102,6 +106,13 @@ impl PraxisError {
     /// ```
     pub fn no_authed_providers(tried: Vec<String>) -> Self {
         Self::NoAuthedProviders(tried)
+    }
+
+    /// Convenience constructor for [`PraxisError::SummaryFailed`].
+    pub fn summary_failed(detail: impl Into<String>) -> Self {
+        Self::SummaryFailed {
+            detail: detail.into(),
+        }
     }
 
     /// Convenience constructor for [`PraxisError::MalformedCredentials`].

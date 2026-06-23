@@ -57,7 +57,7 @@ fn report_synthesizes_one_finding_per_critique() {
     let authors: Vec<&str> = report
         .findings()
         .iter()
-        .map(|f| f.author().as_str())
+        .map(|f| f.author().map(|a| a.as_str()).unwrap_or(""))
         .collect();
     assert_eq!(authors, vec!["critic-a", "critic-b"]);
 
@@ -94,7 +94,10 @@ fn report_from_manual_transcript_skips_non_critiques() {
     let report = Report::from_transcript(&transcript);
 
     assert_eq!(report.findings().len(), 1);
-    assert_eq!(report.findings()[0].author().as_str(), "critic-a");
+    assert_eq!(
+        report.findings()[0].author().map(|a| a.as_str()),
+        Some("critic-a")
+    );
     assert_eq!(report.findings()[0].summary(), "a real finding");
 }
 
@@ -103,16 +106,14 @@ fn report_renders_to_markdown_with_title_and_per_finding_blocks() {
     use praxis::Finding;
 
     let mut report = Report::new();
-    report.push_finding(Finding::new(
-        AgentId::new("critic-a"),
-        Severity::Blocker,
-        "Assumptions unsupported.",
-    ));
-    report.push_finding(Finding::new(
-        AgentId::new("critic-b"),
-        Severity::Info,
-        "Worth a footnote.",
-    ));
+    report.push_finding(
+        Finding::new(Severity::Blocker, "Assumptions unsupported.")
+            .with_supporting_critics(vec![AgentId::new("critic-a")]),
+    );
+    report.push_finding(
+        Finding::new(Severity::Info, "Worth a footnote.")
+            .with_supporting_critics(vec![AgentId::new("critic-b")]),
+    );
 
     let md = report.to_markdown();
 

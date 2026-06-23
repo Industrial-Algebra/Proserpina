@@ -55,6 +55,9 @@ mod runner;
 mod subject;
 mod transcript;
 
+#[cfg(feature = "backend-http")]
+pub mod summary;
+
 pub use agent::{Agent, AgentId};
 pub use backend::EchoAgent;
 pub use error::PraxisError;

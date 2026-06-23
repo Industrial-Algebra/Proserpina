@@ -38,6 +38,10 @@ enum Command {
         /// Path to a credentials config file (overrides discovery). Roster path only.
         #[arg(long)]
         config: Option<PathBuf>,
+        /// Emit the report as JSON (machine-readable) instead of markdown.
+        /// Requires the `json` feature at build time.
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -50,7 +54,8 @@ fn main() -> ExitCode {
             echo,
             seed,
             config,
-        } => match critique(&input, echo, seed, config.as_deref()) {
+            json,
+        } => match critique(&input, echo, seed, config.as_deref(), json) {
             Ok(markdown) => {
                 match out {
                     Some(path) => {
@@ -76,6 +81,7 @@ fn critique(
     echo: bool,
     seed: Option<u64>,
     config: Option<&std::path::Path>,
+    json: bool,
 ) -> Result<String, praxis::PraxisError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input)
@@ -89,13 +95,12 @@ fn critique(
     {
         // Generate a seed if none given, so every roster run is reproducible.
         let seed = seed.unwrap_or_else(rand::random);
-        praxis::cli::run_critique(&text, &source, seed, config)
+        praxis::cli::run_critique(&text, &source, seed, config, json)
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
-        // No HTTP backend compiled in: fall back to echo with a notice.
-        let _ = (seed, config);
+        let _ = (seed, config, json);
         let mut report = praxis::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)
