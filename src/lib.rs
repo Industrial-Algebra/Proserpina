@@ -45,6 +45,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod agent;
+#[cfg(feature = "backend-http")]
+pub mod agent_info;
 pub mod backend;
 mod error;
 mod graph;
@@ -59,6 +61,8 @@ mod transcript;
 pub mod summary;
 
 pub use agent::{Agent, AgentId};
+#[cfg(feature = "backend-http")]
+pub use agent_info::{Capabilities, Plan, PlanSlot, ProviderInfo};
 pub use backend::EchoAgent;
 pub use error::PraxisError;
 pub use graph::{InteractionGraph, Topology};

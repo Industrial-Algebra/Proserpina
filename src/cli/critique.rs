@@ -22,10 +22,9 @@ use crate::runner::Runner;
 use crate::subject::Subject;
 
 /// The default critic personas used when none is configured.
-fn default_personas() -> Vec<Persona> {
-    vec![Persona::new("Devil's Advocate")
-        .with_framing("Assume the proposal is wrong; find how.")
-        .with_focus("logical gaps and unsupported assumptions")]
+/// Delegates to [`crate::persona::Persona::default_panel`].
+pub fn default_personas() -> Vec<Persona> {
+    crate::persona::Persona::default_panel()
 }
 
 /// Runs a critique using the offline echo backend and returns the markdown
@@ -135,4 +134,50 @@ pub fn run_critique(
         body.push_str(&format!("\n_Reproducibility: seed `{seed}`_\n"));
     }
     Ok(body)
+}
+
+/// Resolves the roster for a critique and emits a [`Plan`] without making any
+/// API calls (`praxis critique --dry-run`). Lets an agent verify intent before
+/// spending tokens.
+///
+/// # Errors
+///
+/// Returns [`PraxisError::NoAuthedProviders`] when no provider key is set
+/// (same as a real run).
+#[cfg(all(feature = "cli", feature = "backend-http"))]
+pub fn plan_critique(
+    _input: &str,
+    _source: &str,
+    seed: u64,
+    config_path: Option<&std::path::Path>,
+    _json: bool,
+) -> Result<String, PraxisError> {
+    use crate::agent_info::Plan;
+    use crate::backend::credentials::authed_configs_with;
+    use crate::backend::roster::Provider;
+    #[cfg(feature = "json")]
+    use crate::persona::Persona;
+
+    let configs = authed_configs_with(config_path)?;
+    if configs.is_empty() {
+        return Err(PraxisError::no_authed_providers(
+            Provider::registry()
+                .iter()
+                .map(|p| p.name().to_owned())
+                .collect(),
+        ));
+    }
+    #[cfg(feature = "json")]
+    {
+        let plan = Plan::for_parallel(&Persona::default_panel(), &configs, seed);
+        Ok(serde_json::to_string_pretty(&plan).unwrap_or_else(|_| "{}".to_owned()))
+    }
+    #[cfg(not(feature = "json"))]
+    {
+        // Without json, fall back to a simple human summary of the plan.
+        Ok(format!(
+            "Dry-run would use seed {seed} with {} provider config(s).",
+            configs.len()
+        ))
+    }
 }
