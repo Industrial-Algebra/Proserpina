@@ -35,6 +35,9 @@ enum Command {
         /// reproducible. Ignored by --echo.
         #[arg(long)]
         seed: Option<u64>,
+        /// Path to a credentials config file (overrides discovery). Roster path only.
+        #[arg(long)]
+        config: Option<PathBuf>,
     },
 }
 
@@ -46,7 +49,8 @@ fn main() -> ExitCode {
             out,
             echo,
             seed,
-        } => match critique(&input, echo, seed) {
+            config,
+        } => match critique(&input, echo, seed, config.as_deref()) {
             Ok(markdown) => {
                 match out {
                     Some(path) => {
@@ -71,6 +75,7 @@ fn critique(
     input: &std::path::Path,
     echo: bool,
     seed: Option<u64>,
+    config: Option<&std::path::Path>,
 ) -> Result<String, praxis::PraxisError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input)
@@ -84,13 +89,13 @@ fn critique(
     {
         // Generate a seed if none given, so every roster run is reproducible.
         let seed = seed.unwrap_or_else(rand::random);
-        praxis::cli::run_critique(&text, &source, seed)
+        praxis::cli::run_critique(&text, &source, seed, config)
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
         // No HTTP backend compiled in: fall back to echo with a notice.
-        let _ = seed;
+        let _ = (seed, config);
         let mut report = praxis::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)
