@@ -63,6 +63,17 @@ pub enum PraxisError {
         /// The missing fields (subset of `api_key`, `model`, `base_url`).
         missing: Vec<&'static str>,
     },
+
+    /// A panel name was requested that is neither built-in nor in the config.
+    ///
+    /// Carries the names that *were* available so the message is actionable.
+    #[error("unknown panel `{name}`; available: {}", .available.join(", "))]
+    UnknownPanel {
+        /// The requested panel name.
+        name: String,
+        /// The available panel names (built-in + config-defined).
+        available: Vec<String>,
+    },
 }
 
 impl PraxisError {
@@ -145,6 +156,7 @@ impl PraxisError {
             PraxisError::SummaryFailed { .. } => "summary_failed",
             PraxisError::MalformedCredentials { .. } => "malformed_credentials",
             PraxisError::IncompleteCustomProvider { .. } => "incomplete_custom_provider",
+            PraxisError::UnknownPanel { .. } => "unknown_panel",
         }
     }
 
@@ -159,6 +171,7 @@ impl PraxisError {
             PraxisError::SummaryFailed { .. } => 12,
             PraxisError::MalformedCredentials { .. } => 13,
             PraxisError::IncompleteCustomProvider { .. } => 14,
+            PraxisError::UnknownPanel { .. } => 16,
         }
     }
 
@@ -203,6 +216,18 @@ impl PraxisError {
                 "provider": name,
                 "missing": missing,
             }),
+            PraxisError::UnknownPanel { name, available } => serde_json::json!({
+                "name": name,
+                "available": available,
+            }),
+        }
+    }
+
+    /// Convenience constructor for [`PraxisError::UnknownPanel`].
+    pub fn unknown_panel(name: impl Into<String>, available: Vec<String>) -> Self {
+        Self::UnknownPanel {
+            name: name.into(),
+            available,
         }
     }
 }
@@ -225,6 +250,7 @@ pub fn exit_codes_map() -> std::collections::BTreeMap<u8, &'static str> {
         (13, "malformed credentials"),
         (14, "incomplete custom provider"),
         (15, "missing agent"),
+        (16, "unknown panel"),
         (70, "other / internal"),
     ]
     .into_iter()
