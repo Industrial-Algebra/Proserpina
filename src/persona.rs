@@ -11,6 +11,7 @@
 /// Teamer, Domain Expert, Editor) lands alongside the runner; v1 ships the type
 /// and its builder so the data model is complete and testable in isolation.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Persona {
     name: String,
     framing: Option<String>,
@@ -64,5 +65,14 @@ impl Persona {
     /// The focus area, if set.
     pub fn focus(&self) -> Option<&str> {
         self.focus.as_deref()
+    }
+
+    /// The default critic panel used when none is configured: a single Devil's
+    /// Advocate. Lives in `persona` so it is available without the `cli`
+    /// feature; the CLI delegates here.
+    pub fn default_panel() -> Vec<Persona> {
+        vec![Persona::new("Devil's Advocate")
+            .with_framing("Assume the proposal is wrong; find how.")
+            .with_focus("logical gaps and unsupported assumptions")]
     }
 }

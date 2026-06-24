@@ -18,4 +18,4 @@ pub mod critique;
 pub use critique::run_critique_echo;
 
 #[cfg(feature = "backend-http")]
-pub use critique::run_critique;
+pub use critique::{plan_critique, run_critique};

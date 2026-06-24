@@ -132,4 +132,101 @@ impl PraxisError {
             missing,
         }
     }
+
+    /// A stable machine-readable kind string for this error variant.
+    ///
+    /// Used by [`to_error_json`](Self::to_error_json) so agents can switch on
+    /// the error type without parsing the human message.
+    pub fn error_kind(&self) -> &'static str {
+        match self {
+            PraxisError::AgentFailure { .. } => "agent_failure",
+            PraxisError::MissingAgent(_) => "missing_agent",
+            PraxisError::NoAuthedProviders(_) => "no_authed_providers",
+            PraxisError::SummaryFailed { .. } => "summary_failed",
+            PraxisError::MalformedCredentials { .. } => "malformed_credentials",
+            PraxisError::IncompleteCustomProvider { .. } => "incomplete_custom_provider",
+        }
+    }
+
+    /// The exit code a CLI run should terminate with when this error occurs.
+    ///
+    /// Matches the scheme reported by [`exit_codes_map`] / `praxis capabilities`.
+    pub fn exit_code(&self) -> u8 {
+        match self {
+            PraxisError::AgentFailure { .. } => 11,
+            PraxisError::MissingAgent(_) => 15,
+            PraxisError::NoAuthedProviders(_) => 10,
+            PraxisError::SummaryFailed { .. } => 12,
+            PraxisError::MalformedCredentials { .. } => 13,
+            PraxisError::IncompleteCustomProvider { .. } => 14,
+        }
+    }
+
+    /// Renders the error as structured JSON on stderr (requires the `json`
+    /// feature).
+    ///
+    /// Shape: `{ "error": { "kind": "...", "message": "...", "details": {...} } }`.
+    #[cfg(feature = "json")]
+    pub fn to_error_json(&self) -> String {
+        let details = self.details_json();
+        let payload = serde_json::json!({
+            "error": {
+                "kind": self.error_kind(),
+                "message": self.to_string(),
+                "details": details,
+            }
+        });
+        serde_json::to_string(&payload)
+            .unwrap_or_else(|_| "{\"error\":{\"kind\":\"serialization_failed\"}}".to_owned())
+    }
+
+    /// Variant-specific structured details for [`to_error_json`](Self::to_error_json).
+    #[cfg(feature = "json")]
+    fn details_json(&self) -> serde_json::Value {
+        match self {
+            PraxisError::AgentFailure { agent_id, detail } => serde_json::json!({
+                "agent_id": agent_id,
+                "detail": detail,
+            }),
+            PraxisError::MissingAgent(id) => serde_json::json!({ "agent_id": id.to_string() }),
+            PraxisError::NoAuthedProviders(tried) => serde_json::json!({
+                "tried": tried,
+            }),
+            PraxisError::SummaryFailed { detail } => serde_json::json!({
+                "detail": detail,
+            }),
+            PraxisError::MalformedCredentials { path, detail } => serde_json::json!({
+                "path": path,
+                "detail": detail,
+            }),
+            PraxisError::IncompleteCustomProvider { name, missing } => serde_json::json!({
+                "provider": name,
+                "missing": missing,
+            }),
+        }
+    }
+}
+
+/// The canonical Praxis exit-code scheme, as a sorted map (code -> meaning).
+///
+/// Single source of truth: [`PraxisError::exit_code`] returns values from
+/// this scheme, and `praxis capabilities` reports it so agents can learn it.
+///
+/// May appear unused on builds without `backend-http` (Capabilities is then
+/// gated out); it remains the documented source of truth for the codes.
+#[allow(dead_code)]
+pub fn exit_codes_map() -> std::collections::BTreeMap<u8, &'static str> {
+    [
+        (0, "success"),
+        (2, "usage error"),
+        (10, "no authed providers"),
+        (11, "agent (provider) failure"),
+        (12, "summarizer failure"),
+        (13, "malformed credentials"),
+        (14, "incomplete custom provider"),
+        (15, "missing agent"),
+        (70, "other / internal"),
+    ]
+    .into_iter()
+    .collect()
 }

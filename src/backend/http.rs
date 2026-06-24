@@ -180,6 +180,12 @@ impl HttpAgent {
         }
     }
 
+    /// The label used in failure messages: persona (model), so a multi-provider
+    /// run can tell which provider died.
+    fn failure_label(&self) -> String {
+        format!("{} ({})", self.id.as_str(), self.config.model)
+    }
+
     /// The async inner: render, POST, return the raw response body.
     async fn fetch_response(&self, incoming: &Message) -> Result<String, crate::PraxisError> {
         let messages = render_prompt(&self.persona, incoming);
@@ -188,6 +194,7 @@ impl HttpAgent {
             "{}/chat/completions",
             self.config.base_url.trim_end_matches('/')
         );
+        let label = self.failure_label();
 
         let resp = self
             .client
@@ -196,17 +203,16 @@ impl HttpAgent {
             .json(&body)
             .send()
             .await
-            .map_err(|e| {
-                crate::PraxisError::agent_failure(self.id.as_str(), format!("HTTP send: {e}"))
-            })?;
+            .map_err(|e| crate::PraxisError::agent_failure(&label, format!("HTTP send: {e}")))?;
 
         let status = resp.status();
-        let text = resp.text().await.map_err(|e| {
-            crate::PraxisError::agent_failure(self.id.as_str(), format!("HTTP body: {e}"))
-        })?;
+        let text = resp
+            .text()
+            .await
+            .map_err(|e| crate::PraxisError::agent_failure(&label, format!("HTTP body: {e}")))?;
         if !status.is_success() {
             return Err(crate::PraxisError::agent_failure(
-                self.id.as_str(),
+                &label,
                 format!("HTTP {status}: {text}"),
             ));
         }
