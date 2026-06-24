@@ -146,8 +146,8 @@ impl Provider {
                     .with_model("qwen-plus")
                     .with_key_env_var("DASHSCOPE_API_KEY"),
                 Provider::new("zai")
-                    .with_base_url("https://open.bigmodel.cn/api/paas/v4")
-                    .with_model("glm-4-plus")
+                    .with_base_url("https://api.z.ai/api/coding/paas/v4")
+                    .with_model("glm-5.2")
                     .with_key_env_var("ZAI_API_KEY"),
                 Provider::new("google")
                     .with_base_url("https://generativelanguage.googleapis.com/v1beta/openai")

@@ -8,8 +8,8 @@
 //! `PRAXIS_CONFIG` or `--config`) so it can reach providers whose keys are not
 //! in the environment — pi mediates several providers via OAuth/extensions and
 //! does not expose plain keys to a separate process. The same file also lets
-//! you override the registry's model defaults (e.g. `glm-5.2` instead of the
-//! drifted `glm-4-plus`), and define custom providers (any OpenAI-compatible
+//! you override the registry's model defaults (e.g. pin a specific Z.ai or
+//! OpenAI model), and define custom providers (any OpenAI-compatible
 //! endpoint: Ollama, LM Studio, OpenRouter, a proxy).
 //!
 //! Resolution (env > config > registry-default) and the pure
