@@ -76,14 +76,17 @@ pub fn run_critique(
     seed: u64,
     config_path: Option<&std::path::Path>,
     json: bool,
+    panel: Option<&str>,
 ) -> Result<String, PraxisError> {
-    use crate::backend::credentials::authed_configs_with;
+    use crate::backend::credentials::{authed_configs_with, Credentials};
     use crate::backend::http::HttpAgent;
     use crate::backend::roster::{random_roster, Provider};
+    use crate::persona::resolve_panel;
     use crate::summary::summarize;
     use rand::SeedableRng;
 
-    let personas = default_personas();
+    let credentials = Credentials::discover_or(config_path)?;
+    let personas = resolve_panel(panel.unwrap_or("default"), &credentials)?;
     let configs = authed_configs_with(config_path)?;
     if configs.is_empty() {
         return Err(PraxisError::no_authed_providers(
@@ -151,13 +154,14 @@ pub fn plan_critique(
     seed: u64,
     config_path: Option<&std::path::Path>,
     _json: bool,
+    panel: Option<&str>,
 ) -> Result<String, PraxisError> {
     use crate::agent_info::Plan;
-    use crate::backend::credentials::authed_configs_with;
+    use crate::backend::credentials::{authed_configs_with, Credentials};
     use crate::backend::roster::Provider;
-    #[cfg(feature = "json")]
-    use crate::persona::Persona;
+    use crate::persona::resolve_panel;
 
+    let credentials = Credentials::discover_or(config_path)?;
     let configs = authed_configs_with(config_path)?;
     if configs.is_empty() {
         return Err(PraxisError::no_authed_providers(
@@ -169,12 +173,13 @@ pub fn plan_critique(
     }
     #[cfg(feature = "json")]
     {
-        let plan = Plan::for_parallel(&Persona::default_panel(), &configs, seed);
+        let personas = resolve_panel(panel.unwrap_or("default"), &credentials)?;
+        let plan = Plan::for_parallel(&personas, &configs, seed);
         Ok(serde_json::to_string_pretty(&plan).unwrap_or_else(|_| "{}".to_owned()))
     }
     #[cfg(not(feature = "json"))]
     {
-        // Without json, fall back to a simple human summary of the plan.
+        let _ = panel;
         Ok(format!(
             "Dry-run would use seed {seed} with {} provider config(s).",
             configs.len()

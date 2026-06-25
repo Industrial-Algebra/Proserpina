@@ -52,6 +52,10 @@ enum Command {
         /// calls. Lets an agent verify intent before spending tokens.
         #[arg(long)]
         dry_run: bool,
+        /// Panel name to use (built-in: default/duo/panel, or a [panels.NAME]
+        /// section from the config). Defaults to "default".
+        #[arg(long)]
+        panel: Option<String>,
     },
     /// Print Praxis's capabilities as JSON: version, subcommands, providers
     /// (and which are currently authed), personas, topologies, exit codes.
@@ -87,7 +91,16 @@ fn main() -> ExitCode {
             config,
             json,
             dry_run,
-        } => match run(&input, echo, seed, config.as_deref(), json, dry_run) {
+            panel,
+        } => match run(
+            &input,
+            echo,
+            seed,
+            config.as_deref(),
+            json,
+            dry_run,
+            panel.as_deref(),
+        ) {
             Ok(output) => {
                 match out {
                     Some(path) => {
@@ -128,6 +141,7 @@ fn run(
     config: Option<&std::path::Path>,
     json: bool,
     dry_run: bool,
+    panel: Option<&str>,
 ) -> Result<String, praxis::PraxisError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input)
@@ -141,14 +155,14 @@ fn run(
     {
         let seed = seed.unwrap_or_else(rand::random);
         if dry_run {
-            return praxis::cli::plan_critique(&text, &source, seed, config, json);
+            return praxis::cli::plan_critique(&text, &source, seed, config, json, panel);
         }
-        praxis::cli::run_critique(&text, &source, seed, config, json)
+        praxis::cli::run_critique(&text, &source, seed, config, json, panel)
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
-        let _ = (seed, config, json, dry_run);
+        let _ = (seed, config, json, dry_run, panel);
         let mut report = praxis::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)

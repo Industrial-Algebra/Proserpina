@@ -51,7 +51,7 @@ pub mod backend;
 mod error;
 mod graph;
 mod message;
-mod persona;
+pub mod persona;
 mod report;
 mod runner;
 mod subject;

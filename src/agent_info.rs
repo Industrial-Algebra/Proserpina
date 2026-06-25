@@ -44,6 +44,8 @@ pub struct Capabilities {
     pub providers: Vec<ProviderInfo>,
     /// The panel of critic personas currently in use.
     pub personas: Vec<crate::persona::Persona>,
+    /// Available panel names (built-in + config-defined).
+    pub panels: Vec<String>,
     /// The exit-code scheme (code -> meaning), so agents can learn it.
     pub exit_codes: std::collections::BTreeMap<u8, &'static str>,
 }
@@ -67,6 +69,7 @@ impl Capabilities {
             topologies: vec!["parallel".to_owned(), "rounds".to_owned()],
             providers,
             personas: crate::persona::Persona::default_panel(),
+            panels: vec!["default".to_owned(), "duo".to_owned(), "panel".to_owned()],
             exit_codes: crate::error::exit_codes_map(),
         }
     }
@@ -101,6 +104,12 @@ impl Capabilities {
                 });
             }
             let _ = registry_names;
+        }
+        // Surface user-defined panels from the config (in addition to built-ins).
+        if let Ok(creds) = crate::backend::credentials::Credentials::discover() {
+            for name in creds.panels().keys() {
+                caps.panels.push(name.clone());
+            }
         }
         caps
     }

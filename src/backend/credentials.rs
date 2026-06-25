@@ -37,10 +37,41 @@ pub struct ProviderOverride {
     pub base_url: Option<String>,
 }
 
-/// The parsed credentials config: provider name → override block.
+/// A user-defined panel from the config file: a named list of personas.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+pub struct PanelConfig {
+    /// The personas in this panel.
+    pub personas: Vec<PersonaSpec>,
+}
+
+/// One persona in a config-defined panel.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
+pub struct PersonaSpec {
+    name: String,
+    framing: Option<String>,
+    focus: Option<String>,
+}
+
+impl PersonaSpec {
+    /// Converts this spec into a [`crate::persona::Persona`].
+    pub fn to_persona(&self) -> crate::persona::Persona {
+        let mut p = crate::persona::Persona::new(self.name.clone());
+        if let Some(f) = &self.framing {
+            p = p.with_framing(f.clone());
+        }
+        if let Some(f) = &self.focus {
+            p = p.with_focus(f.clone());
+        }
+        p
+    }
+}
+
+/// The parsed credentials config: provider name → override block, plus any
+/// user-defined panels under `[panels.NAME]`.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Credentials {
     providers: HashMap<String, ProviderOverride>,
+    panels: HashMap<String, PanelConfig>,
 }
 
 impl Credentials {
@@ -62,9 +93,22 @@ impl Credentials {
         if toml.trim().is_empty() {
             return Ok(Self::default());
         }
-        let parsed: HashMap<String, ProviderOverride> =
+        // Parse with an explicit `panels` table; everything else is a provider
+        // section (flattened). This keeps `[panels.NAME]` separate from
+        // `[provider-name]`.
+        #[derive(serde::Deserialize)]
+        struct Raw {
+            #[serde(default)]
+            panels: HashMap<String, PanelConfig>,
+            #[serde(flatten)]
+            providers: HashMap<String, ProviderOverride>,
+        }
+        let parsed: Raw =
             ::toml::from_str(toml).map_err(|e| PraxisError::malformed_credentials("<str>", e))?;
-        Ok(Self { providers: parsed })
+        Ok(Self {
+            providers: parsed.providers,
+            panels: parsed.panels,
+        })
     }
 
     /// Reads and parses credentials from a file.
@@ -129,6 +173,25 @@ impl Credentials {
     /// An iterator over `(name, override)` pairs.
     pub fn iter(&self) -> impl Iterator<Item = (&String, &ProviderOverride)> {
         self.providers.iter()
+    }
+
+    /// Loads credentials from `path` if given, else discovers the default.
+    ///
+    /// Convenience for CLI entry points that take an optional `--config`.
+    ///
+    /// # Errors
+    ///
+    /// See [`Credentials::from_path`] and [`Credentials::discover`].
+    pub fn discover_or(path: Option<&std::path::Path>) -> Result<Self, PraxisError> {
+        match path {
+            Some(p) => Self::from_path(p),
+            None => Self::discover(),
+        }
+    }
+
+    /// The user-defined panels in this config (name → panel).
+    pub fn panels(&self) -> &HashMap<String, PanelConfig> {
+        &self.panels
     }
 }
 
