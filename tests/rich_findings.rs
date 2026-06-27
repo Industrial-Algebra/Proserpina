@@ -197,8 +197,13 @@ fn live_deepseek_summary_produces_structured_findings() {
         model: "deepseek-chat".to_owned(),
         api_key: key,
     };
-    let findings =
-        summarize(&subject, &transcript, &config).expect("live summarizer call should succeed");
+    let findings = summarize(
+        &subject,
+        &transcript,
+        &config,
+        &praxis::backend::http::RetryPolicy::DEFAULT,
+    )
+    .expect("live summarizer call should succeed");
     assert!(!findings.is_empty(), "summarizer should produce findings");
     // Each finding must have a severity and summary.
     for f in &findings {

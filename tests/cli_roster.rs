@@ -29,7 +29,15 @@ fn run_critique_errors_when_no_provider_keys_are_set() {
         std::env::remove_var(var);
     }
 
-    let result = run_critique("# Plan\n\nbody", "plan.md", 0, None, false, None);
+    let result = run_critique(
+        "# Plan\n\nbody",
+        "plan.md",
+        0,
+        None,
+        false,
+        None,
+        praxis::backend::http::RetryPolicy::NONE,
+    );
     let err = result.expect_err("no keys set -> should error");
     let msg = format!("{err}");
     assert!(

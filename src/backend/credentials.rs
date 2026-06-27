@@ -44,6 +44,23 @@ pub struct PanelConfig {
     pub personas: Vec<PersonaSpec>,
 }
 
+/// The `[retry]` section of the config file. All fields optional; missing
+/// fields fall back to [`crate::backend::http::RetryPolicy::DEFAULT`] at
+/// resolution time.
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
+pub struct RetryConfig {
+    /// Total tries including the first.
+    pub max_attempts: Option<u32>,
+    /// Per-attempt socket+read timeout, in seconds.
+    pub timeout_secs: Option<u64>,
+    /// Backoff before the second attempt, in milliseconds.
+    pub initial_backoff_ms: Option<u64>,
+    /// Exponential growth factor between backoffs.
+    pub backoff_factor: Option<f64>,
+    /// Cap on any single backoff, in milliseconds.
+    pub max_backoff_ms: Option<u64>,
+}
+
 /// One persona in a config-defined panel.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct PersonaSpec {
@@ -68,10 +85,11 @@ impl PersonaSpec {
 
 /// The parsed credentials config: provider name → override block, plus any
 /// user-defined panels under `[panels.NAME]`.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Credentials {
     providers: HashMap<String, ProviderOverride>,
     panels: HashMap<String, PanelConfig>,
+    retry: RetryConfig,
 }
 
 impl Credentials {
@@ -100,6 +118,8 @@ impl Credentials {
         struct Raw {
             #[serde(default)]
             panels: HashMap<String, PanelConfig>,
+            #[serde(default)]
+            retry: RetryConfig,
             #[serde(flatten)]
             providers: HashMap<String, ProviderOverride>,
         }
@@ -108,6 +128,7 @@ impl Credentials {
         Ok(Self {
             providers: parsed.providers,
             panels: parsed.panels,
+            retry: parsed.retry,
         })
     }
 
@@ -192,6 +213,11 @@ impl Credentials {
     /// The user-defined panels in this config (name → panel).
     pub fn panels(&self) -> &HashMap<String, PanelConfig> {
         &self.panels
+    }
+
+    /// The `[retry]` section, if present (all-`None` if absent).
+    pub fn retry(&self) -> &RetryConfig {
+        &self.retry
     }
 }
 

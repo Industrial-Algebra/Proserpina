@@ -24,6 +24,14 @@ fn run_critique_with_json_errors_cleanly_when_no_keys_set() {
     ] {
         std::env::remove_var(var);
     }
-    let result = run_critique("# Plan\n\nbody", "plan.md", 0, None, true, None);
+    let result = run_critique(
+        "# Plan\n\nbody",
+        "plan.md",
+        0,
+        None,
+        true,
+        None,
+        praxis::backend::http::RetryPolicy::NONE,
+    );
     assert!(result.is_err());
 }

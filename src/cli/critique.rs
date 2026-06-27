@@ -77,6 +77,7 @@ pub fn run_critique(
     config_path: Option<&std::path::Path>,
     json: bool,
     panel: Option<&str>,
+    policy: crate::backend::http::RetryPolicy,
 ) -> Result<String, PraxisError> {
     use crate::backend::credentials::{authed_configs_with, Credentials};
     use crate::backend::http::HttpAgent;
@@ -106,7 +107,7 @@ pub fn run_critique(
     let mut runner = Runner::new(graph);
     for (persona, config) in roster {
         let id = AgentId::new(persona.name());
-        runner = runner.with_agent(HttpAgent::new(id, persona, config));
+        runner = runner.with_agent(HttpAgent::new_with_policy(id, persona, config, policy));
     }
 
     let subject = Subject::from_markdown(input, source);
@@ -114,7 +115,7 @@ pub fn run_critique(
 
     // Summarizer pass: structure the transcript into rich findings via the
     // first authed config. Graceful on empty (yields no findings).
-    let findings = summarize(&subject, &transcript, &configs[0]).unwrap_or_default();
+    let findings = summarize(&subject, &transcript, &configs[0], &policy).unwrap_or_default();
     let mut report = Report::new();
     for f in findings {
         report.push_finding(f);
