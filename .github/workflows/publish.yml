@@ -1,0 +1,24 @@
+name: Publish
+
+# Publishes to crates.io when a v* tag is pushed to main.
+#
+# Requires the `CARGO_REGISTRY_TOKEN` secret to be set in the repo
+# (https://crates.io/settings/tokens, scoped to publish-update).
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --all-features --locked

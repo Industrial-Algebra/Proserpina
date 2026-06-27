@@ -7,6 +7,7 @@ description = "Multi-agent critique and cross-examination pipeline for documents
 license = "AGPL-3.0-only"
 repository = "https://github.com/industrial-algebra/Praxis"
 homepage = "https://github.com/industrial-algebra/Praxis"
+documentation = "https://docs.rs/praxis"
 keywords = ["multi-agent", "critique", "peer-review", "llm", "evaluation"]
 categories = ["command-line-utilities", "text-processing", "development-tools"]
 readme = "README.md"
