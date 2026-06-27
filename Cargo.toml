@@ -48,3 +48,6 @@ required-features = ["backend-http"]
 [[example]]
 name = "panel_smoke"
 required-features = ["backend-http"]
+
+[[example]]
+name = "library_usage"
