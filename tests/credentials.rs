@@ -12,9 +12,7 @@
 
 use std::collections::HashMap;
 
-use praxis::backend::credentials::{
-    authed_configs, resolve_configs, Credentials, ProviderOverride,
-};
+use praxis::backend::credentials::{authed_configs, resolve_configs, Credentials};
 use praxis::backend::http::HttpConfig;
 use praxis::backend::roster::Provider;
 

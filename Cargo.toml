@@ -44,3 +44,7 @@ required-features = ["cli"]
 [[example]]
 name = "deepseek_smoke"
 required-features = ["backend-http"]
+
+[[example]]
+name = "panel_smoke"
+required-features = ["backend-http"]

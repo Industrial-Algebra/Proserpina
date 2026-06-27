@@ -7,7 +7,6 @@
 
 use std::sync::{Arc, Mutex};
 
-use praxis::backend::http::should_retry_status;
 use praxis::backend::http::RetryPolicy;
 
 #[test]
@@ -91,7 +90,7 @@ fn backoff_delay_adds_jitter_within_bounds() {
     for _ in 0..50 {
         let d = backoff_delay(&p, 1, 100);
         let ms = d.as_millis();
-        assert!(ms >= 500 && ms <= 600, "delay {ms}ms out of [500, 600]");
+        assert!((500..=600).contains(&ms), "delay {ms}ms out of [500, 600]");
     }
 }
 
