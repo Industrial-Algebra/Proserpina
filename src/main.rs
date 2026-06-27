@@ -56,6 +56,14 @@ enum Command {
         /// section from the config). Defaults to "default".
         #[arg(long)]
         panel: Option<String>,
+        /// Override the retry policy's max attempts (CLI > [retry] config >
+        /// default 3).
+        #[arg(long)]
+        max_attempts: Option<u32>,
+        /// Override the retry policy's per-attempt timeout in seconds (CLI >
+        /// [retry] config > default 60).
+        #[arg(long)]
+        timeout: Option<u64>,
     },
     /// Print Praxis's capabilities as JSON: version, subcommands, providers
     /// (and which are currently authed), personas, topologies, exit codes.
@@ -92,6 +100,8 @@ fn main() -> ExitCode {
             json,
             dry_run,
             panel,
+            max_attempts,
+            timeout,
         } => match run(
             &input,
             echo,
@@ -100,6 +110,8 @@ fn main() -> ExitCode {
             json,
             dry_run,
             panel.as_deref(),
+            max_attempts,
+            timeout,
         ) {
             Ok(output) => {
                 match out {
@@ -134,6 +146,9 @@ fn emit_error(err: &praxis::PraxisError, json: bool) {
     eprintln!("praxis: {err}");
 }
 
+// CLI flag sprawl is inherent to a subcommand entry point; grouping into a
+// struct would be over-engineering here.
+#[allow(clippy::too_many_arguments)]
 fn run(
     input: &std::path::Path,
     echo: bool,
@@ -142,6 +157,8 @@ fn run(
     json: bool,
     dry_run: bool,
     panel: Option<&str>,
+    max_attempts: Option<u32>,
+    timeout: Option<u64>,
 ) -> Result<String, praxis::PraxisError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input)
@@ -154,15 +171,21 @@ fn run(
     #[cfg(feature = "backend-http")]
     {
         let seed = seed.unwrap_or_else(rand::random);
+        // Resolve retry policy: CLI flags > [retry] config > default.
+        let retry_config = praxis::backend::credentials::Credentials::discover_or(config)
+            .map(|c| c.retry().clone())
+            .unwrap_or_default();
+        let policy =
+            praxis::backend::http::RetryPolicy::resolve(&retry_config, max_attempts, timeout);
         if dry_run {
             return praxis::cli::plan_critique(&text, &source, seed, config, json, panel);
         }
-        praxis::cli::run_critique(&text, &source, seed, config, json, panel)
+        praxis::cli::run_critique(&text, &source, seed, config, json, panel, policy)
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
-        let _ = (seed, config, json, dry_run, panel);
+        let _ = (seed, config, json, dry_run, panel, max_attempts, timeout);
         let mut report = praxis::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)

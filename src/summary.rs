@@ -207,7 +207,10 @@ pub fn summarize(
     subject: &Subject,
     transcript: &Transcript,
     config: &HttpConfig,
+    policy: &crate::backend::http::RetryPolicy,
 ) -> Result<Vec<Finding>, PraxisError> {
+    use crate::backend::http::send_chat_completion;
+
     let messages = render_summary_prompt(subject, transcript);
     let body = serde_json::json!({
         "model": config.model,
@@ -220,27 +223,23 @@ pub fn summarize(
         .build()
         .map_err(|e| PraxisError::summary_failed(format!("runtime build: {e}")))?;
 
-    let client = reqwest::Client::new();
-    let body_text = runtime.block_on(async {
-        let resp = client
-            .post(&url)
-            .bearer_auth(&config.api_key)
-            .json(&body)
-            .send()
-            .await
-            .map_err(|e| PraxisError::summary_failed(format!("HTTP send: {e}")))?;
-        let status = resp.status();
-        let text = resp
-            .text()
-            .await
-            .map_err(|e| PraxisError::summary_failed(format!("HTTP body: {e}")))?;
-        if !status.is_success() {
-            return Err(PraxisError::summary_failed(format!(
-                "HTTP {status}: {text}"
-            )));
-        }
-        Ok::<String, PraxisError>(text)
-    })?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(policy.timeout_secs))
+        .build()
+        .map_err(|e| PraxisError::summary_failed(format!("client build: {e}")))?;
+
+    // Reuse the shared retry/backoff helper, mapping its AgentFailure into
+    // SummaryFailed so summarizer failures keep exit code 12.
+    let body_text = runtime
+        .block_on(send_chat_completion(
+            &client,
+            &url,
+            &config.api_key,
+            &body,
+            policy,
+            &format!("summarizer ({})", config.model),
+        ))
+        .map_err(|e| PraxisError::summary_failed(e.to_string()))?;
 
     // Extract choices[0].message.content (same shape as the HTTP backend).
     let parsed: serde_json::Value = serde_json::from_str(&body_text)
