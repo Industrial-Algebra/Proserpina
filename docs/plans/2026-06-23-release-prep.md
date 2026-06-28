@@ -42,7 +42,7 @@ crates.io-published), so it's simpler.
 
 ### D. CONTRIBUTING.md (Medium)
 IA CLA boilerplate + Proserpina-specific: IA gitflow (feature→develop→main),
-TDD expectation, the four CI gates, clippy `-D warnings`, AGPL headers.
+TDD expectation, the four CI gates, clippy `-D warnings`, Apache headers.
 
 ### E. mdbook `book/` + `book.toml` + `netlify.toml` (Medium)
 IA Navy theme (per the ia-mdbook skill). Structure: Introduction, Getting

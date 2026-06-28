@@ -1,5 +1,5 @@
 // Copyright (C) 2026 Industrial Algebra
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 
 //! Library-usage example: build a Proserpina run programmatically, no CLI, no
 //! network. Uses the deterministic echo backend so it runs anywhere with no

@@ -1,22 +1,22 @@
 # Contributing to Proserpina
 
 Thank you for your interest in contributing! Proserpina is an Industrial Algebra
-project, dual-licensed under AGPL v3 and a commercial license.
+project, dual-licensed under Apache-2.0 and a commercial license.
 
 ## Contributor License Agreement (CLA)
 
-Proserpina is dual-licensed (AGPL v3 + commercial). To enable this model, **all
+Proserpina is licensed under Apache-2.0, with a CLA that enables commercial licensing. To enable this model, **all
 contributors must sign a Contributor License Agreement (CLA)**.
 
 The CLA grants Industrial Algebra the right to relicense your contributions
 under the commercial license, while you retain full copyright ownership of your
-contributions. Without a CLA, your contributions can only be used under AGPL
+contributions. Without a CLA, your contributions cannot be incorporated
 v3 terms, which would prevent Industrial Algebra from offering a commercial
 license for the combined work.
 
 ### How to Sign
 
-1. Download the CLA from: https://industrial-algebra.org/cla
+1. Download the CLA from: https://github.com/Industrial-Algebra/.github/blob/main/CLA.md
 2. Sign and email to: cla@industrial-algebra.org
 3. Include your GitHub username in the email
 
@@ -45,8 +45,8 @@ behind the `backend-http` feature.
 - **Additive feature gates only.** Features add capability; they never remove
   existing API. Document every feature in `src/lib.rs`.
 - **Every public item is documented**, with `# Examples` / `# Errors` sections.
-- **AGPL headers** (`// Copyright (C) 2026 Industrial Algebra` +
-  `// SPDX-License-Identifier: AGPL-3.0-only`) on every `.rs` file.
+- **Apache headers** (`// Copyright (C) 2026 Industrial Algebra` +
+  `// SPDX-License-Identifier: Apache-2.0`) on every `.rs` file.
 
 ## The Four CI Gates
 
@@ -79,4 +79,4 @@ feature/* ──PR──► develop ──release PR──► main
 ## License
 
 By contributing, you agree that your contributions will be licensed under the
-same dual-licensing model as the project (AGPL v3 + commercial).
+same dual-licensing model as the project (Apache-2.0 + CLA).
