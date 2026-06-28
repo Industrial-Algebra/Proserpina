@@ -32,6 +32,11 @@
 //! - `cli`: the `praxis` binary and clap command line interface
 //! - `serde`: `Serialize`/`Deserialize` impls for core types
 //! - `json`: machine-readable JSON report output (implies `serde`)
+//! - `backend-http`: OpenAI-compatible HTTP agent, multi-provider roster,
+//!   credentials config, summarizer (implies `serde`)
+//! - `keyring`: OS keychain credential tier (implies `backend-http`); macOS
+//!   Keychain + Windows Credential Manager supported, Linux gnome-keyring has
+//!   a known limitation
 //!
 //! ## Usage
 //!
@@ -43,3 +48,35 @@
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
+
+mod agent;
+#[cfg(feature = "backend-http")]
+pub mod agent_info;
+pub mod backend;
+mod error;
+mod graph;
+mod message;
+pub mod persona;
+mod report;
+mod runner;
+mod subject;
+mod transcript;
+
+#[cfg(feature = "backend-http")]
+pub mod summary;
+
+pub use agent::{Agent, AgentId};
+#[cfg(feature = "backend-http")]
+pub use agent_info::{Capabilities, Plan, PlanSlot, ProviderInfo};
+pub use backend::EchoAgent;
+pub use error::PraxisError;
+pub use graph::{InteractionGraph, Topology};
+pub use message::{Message, MessageKind};
+pub use persona::Persona;
+pub use report::{Finding, Report, Severity};
+pub use runner::Runner;
+pub use subject::Subject;
+pub use transcript::Transcript;
+
+#[cfg(feature = "cli")]
+pub mod cli;

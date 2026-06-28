@@ -1,0 +1,52 @@
+{
+  "workflow": {
+    "phases": {
+      "brainstorm": "pending",
+      "plan": "pending",
+      "execute": "pending",
+      "verify": "pending",
+      "review": "pending",
+      "finish": "pending"
+    },
+    "currentPhase": null,
+    "artifacts": {
+      "brainstorm": null,
+      "plan": null,
+      "execute": null,
+      "verify": null,
+      "review": null,
+      "finish": null
+    },
+    "prompted": {
+      "brainstorm": false,
+      "plan": false,
+      "execute": false,
+      "verify": false,
+      "review": false,
+      "finish": false
+    }
+  },
+  "tdd": {
+    "phase": "red-pending",
+    "testFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/tests/keyring.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/tests/agent_readiness.rs"
+    ],
+    "sourceFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/error.rs",
+      "/tmp/keyring_probe/src/main.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/lib.rs"
+    ],
+    "redVerificationPending": true
+  },
+  "debug": {
+    "active": false,
+    "investigated": true,
+    "fixAttempts": 0
+  },
+  "verification": {
+    "verified": false,
+    "verificationWaived": false
+  }
+}
