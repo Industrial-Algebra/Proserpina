@@ -75,6 +75,14 @@ agent-discoverability, configurable persona panels, and retry/timeout/backoff.
   `RetryPolicy::DEFAULT`/`NONE`; `[retry]` config + `--max-attempts`/`--timeout`
   CLI flags (precedence CLI > config > default).
 
+### Added — Security
+
+- **OS keychain credential tier** (`keyring` feature): highest-precedence
+  key source (keyring > env > config > registry), looked up as
+  `praxis:<KEY_ENV_VAR>`. Works on macOS Keychain and Windows Credential
+  Manager; Linux gnome-keyring has a known limitation (use env/config).
+  `PraxisError::KeyringAccess` (exit 17).
+
 ### Tooling
 
 - `praxis` binary behind the `cli` feature; examples (`deepseek_smoke.rs`);

@@ -32,6 +32,11 @@
 //! - `cli`: the `praxis` binary and clap command line interface
 //! - `serde`: `Serialize`/`Deserialize` impls for core types
 //! - `json`: machine-readable JSON report output (implies `serde`)
+//! - `backend-http`: OpenAI-compatible HTTP agent, multi-provider roster,
+//!   credentials config, summarizer (implies `serde`)
+//! - `keyring`: OS keychain credential tier (implies `backend-http`); macOS
+//!   Keychain + Windows Credential Manager supported, Linux gnome-keyring has
+//!   a known limitation
 //!
 //! ## Usage
 //!

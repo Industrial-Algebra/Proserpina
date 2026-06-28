@@ -10,6 +10,7 @@ remove existing API.
 | `serde` | `Serialize`/`Deserialize` impls for core types |
 | `json` | machine-readable JSON report output (implies `serde`) |
 | `backend-http` | the OpenAI-compatible HTTP agent, multi-provider roster, credentials config, summarizer (implies `serde`) |
+| `keyring` | OS keychain credential tier (implies `backend-http`); macOS Keychain + Windows Credential Manager, Linux gnome-keyring has a known limitation |
 
 ## Recommended install
 

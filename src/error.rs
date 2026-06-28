@@ -74,6 +74,17 @@ pub enum PraxisError {
         /// The available panel names (built-in + config-defined).
         available: Vec<String>,
     },
+
+    /// The OS keychain could not be read (no Secret Service, locked keychain,
+    /// etc.). A missing entry is NOT this error — only a backend failure.
+    #[cfg(feature = "keyring")]
+    #[error("keychain access failed for `{name}`: {detail}")]
+    KeyringAccess {
+        /// The key env var the entry was looked up under.
+        name: String,
+        /// The keychain backend's error.
+        detail: String,
+    },
 }
 
 impl PraxisError {
@@ -157,6 +168,8 @@ impl PraxisError {
             PraxisError::MalformedCredentials { .. } => "malformed_credentials",
             PraxisError::IncompleteCustomProvider { .. } => "incomplete_custom_provider",
             PraxisError::UnknownPanel { .. } => "unknown_panel",
+            #[cfg(feature = "keyring")]
+            PraxisError::KeyringAccess { .. } => "keyring_access",
         }
     }
 
@@ -172,6 +185,8 @@ impl PraxisError {
             PraxisError::MalformedCredentials { .. } => 13,
             PraxisError::IncompleteCustomProvider { .. } => 14,
             PraxisError::UnknownPanel { .. } => 16,
+            #[cfg(feature = "keyring")]
+            PraxisError::KeyringAccess { .. } => 17,
         }
     }
 
@@ -220,6 +235,11 @@ impl PraxisError {
                 "name": name,
                 "available": available,
             }),
+            #[cfg(feature = "keyring")]
+            PraxisError::KeyringAccess { name, detail } => serde_json::json!({
+                "name": name,
+                "detail": detail,
+            }),
         }
     }
 
@@ -228,6 +248,16 @@ impl PraxisError {
         Self::UnknownPanel {
             name: name.into(),
             available,
+        }
+    }
+
+    /// Convenience constructor for [`PraxisError::KeyringAccess`] (keyring
+    /// feature only).
+    #[cfg(feature = "keyring")]
+    pub fn keyring_access(name: impl Into<String>, detail: impl std::fmt::Display) -> Self {
+        Self::KeyringAccess {
+            name: name.into(),
+            detail: detail.to_string(),
         }
     }
 }
@@ -251,6 +281,7 @@ pub fn exit_codes_map() -> std::collections::BTreeMap<u8, &'static str> {
         (14, "incomplete custom provider"),
         (15, "missing agent"),
         (16, "unknown panel"),
+        (17, "keychain access failed"),
         (70, "other / internal"),
     ]
     .into_iter()

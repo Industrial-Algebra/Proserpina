@@ -30,6 +30,8 @@ feature combinations, `cargo publish --dry-run` clean.
 - ✅ Agent-discoverability (`capabilities`, `--dry-run`, structured errors, exit codes)
 - ✅ Configurable persona panels (built-in + `[panels.NAME]`)
 - ✅ Retry / timeout / backoff (config + CLI knobs)
+- ✅ OS keychain credential tier (`keyring` feature; macOS/Windows; Linux
+  gnome-keyring has a known limitation — see near-term directions)
 - ✅ Z.ai coding-plan gateway support
 - ✅ mdbook documentation, CI, CHANGELOG, CONTRIBUTING
 
@@ -65,10 +67,14 @@ is committed to a version.
   a `schema_version` field for evolution.
 
 ### Trust & ergonomics
-- **Keychain integration** — `keyring`-backed credential tier (more secure
-  than plaintext).
+- **Keyring on Linux** — the `keyring` crate's gnome-keyring backend has a
+  write-Ok/read-NoEntry quirk; macOS/Windows work. Stabilize the Linux path
+  (pin `secret-service` with an explicit collection, or document the
+  workaround more loudly).
 - **Credentials file permissions check** — warn if world-readable.
 - **Ollama as a first-class preset** — common local-LLM case.
+- **`praxis auth` CLI flow** — interactive `praxis auth set <provider>` that
+  writes the keychain, so users don't have to use a separate tool.
 
 ---
 

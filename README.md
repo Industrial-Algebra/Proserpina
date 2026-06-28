@@ -14,6 +14,14 @@ LLM pass clusters the panel's critiques into actionable, per-issue findings.
 LLM backends are pluggable; a deterministic `EchoAgent` makes the whole
 pipeline testable with zero LLM dependencies.
 
+> ⚠️ **Privacy: Praxis sends your document to a frontier-model provider.**
+> A critique ships the full document text to the provider(s) backing the
+> critics and summarizer. For confidential or regulated content, route Praxis
+> to a **local** model (Ollama, LM Studio) via a custom config section — no
+> data leaves your machine. See
+> [Security & Privacy](https://industrial-algebra-praxis.netlify.app/security/considerations.html)
+> for the full picture.
+
 ## Why multi-agent critique?
 
 Different frontier models have different blind spots, biases, and strengths. A
@@ -146,6 +154,7 @@ via `[retry]` or `--max-attempts`/`--timeout`.
 | `serde` | Serialize/Deserialize impls for core types |
 | `json` | machine-readable JSON report output |
 | `backend-http` | the OpenAI-compatible HTTP agent, multi-provider roster, credentials config, summarizer |
+| `keyring` | OS keychain credential tier (macOS/Windows; Linux limited) — implies `backend-http` |
 
 ## License
 

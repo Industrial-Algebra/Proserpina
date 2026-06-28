@@ -28,11 +28,15 @@ surface is genuinely good. The honest weaknesses are below.
    quick-start docs surface `--panel panel` early, but the default itself
    under-sells the tool.
 
-2. **Plaintext credentials file.**
-   `~/.config/praxis/credentials.toml` stores API keys in plaintext with no
-   permissions check or keychain integration. For a tool whose value is calling
-   paid frontier APIs, this is a real security gap on shared/multi-user
-   machines. Tracked as a near-term follow-up.
+2. **Plaintext keys without the `keyring` feature; Linux even with it.**
+   v0.1.0 ships an OS keychain tier (the `keyring` feature, highest-precedence
+   source) that works on macOS Keychain and Windows Credential Manager. But
+   it's opt-in (not in the default install), and on Linux with gnome-keyring
+   the `keyring` crate's backend has a write-Ok/read-NoEntry quirk that makes
+   it unreliable. So the *default* install path still stores keys in plaintext
+   (`~/.config/praxis/credentials.toml`) with no permissions check. Real
+   improvement over a pure-plaintext world, but not a complete fix — tracked
+   in ROADMAP.
 
 3. **Cost is invisible until it's incurred.**
    `--dry-run` shows call counts, but Praxis doesn't estimate USD cost, and
