@@ -3,7 +3,7 @@
 - **Date:** 2026-06-19
 - **Status:** Approved (scaffold phase complete; implementation via TDD)
 - **Project:** Proserpina — Multi-Agent Critique & Cross-Examination Pipeline
-- **Crate:** standalone, `proserpina`, edition 2021, AGPL-3.0-only
+- **Crate:** standalone, `proserpina`, edition 2021, Apache-2.0
 
 ## 1. Purpose
 
@@ -98,7 +98,7 @@ JSON output lands behind the `json` feature.
 
 ## 5. Crate Layout & Features
 
-Standalone crate (Schubert pattern), edition 2021, `AGPL-3.0-only`,
+Standalone crate (Schubert pattern), edition 2021, `Apache-2.0`,
 `rust-toolchain.toml` nightly + rustfmt/clippy, IA gitflow (`main` + `develop`).
 
 **Features (additive only):**
@@ -151,7 +151,7 @@ refactor. Every public item documented with `# Examples` / `# Errors`.
 
 IA coding standards throughout: TDD, `Result` (never panic in library code),
 exhaustive `match`, `thiserror` errors, additive feature gates, doc tests on
-all public items, AGPL-3.0-only headers on every file. Gitflow: feature
+all public items, Apache-2.0 headers on every file. Gitflow: feature
 branches → PR to `develop` → release PR to `main`; human review only, no
 auto-merge.
 

@@ -158,6 +158,5 @@ via `[retry]` or `--max-attempts`/`--timeout`.
 
 ## License
 
-Dual-licensed under **AGPL-3.0-only** and a separate commercial license. See
-[LICENSE](LICENSE) and [LICENSE-COMMERCIAL](LICENSE-COMMERCIAL). Commercial
-licensing: <license@industrialalgebra.com>.
+Licensed under **Apache-2.0**. See [LICENSE](LICENSE). Contributors must sign
+the [CLA](https://github.com/Industrial-Algebra/.github/blob/main/CLA.md).

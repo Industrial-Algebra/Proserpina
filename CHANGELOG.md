@@ -4,6 +4,27 @@ All notable changes to Proserpina are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.2.0] — 2026-06-28
+
+### Changed — Licensing
+
+- **License changed from AGPL-3.0-only to Apache-2.0.** The AGPL network-use
+  clause created adoption barriers at enterprise customers. Apache-2.0
+  maximizes adoption while preserving attribution and patent grants.
+  Published 0.1.0 on crates.io remains AGPL; 0.2.0 onward is Apache-2.0.
+- **CLA** grants Industrial Algebra the right to relicense contributions.
+- LICENSE-COMMERCIAL removed.
+
+### Added — CLI
+
+- **Auth validation**: `proserpina auth check` validates keys before a run.
+- **Human-readable CLI**: capabilities table, progress output, actionable
+  errors, new subcommands (auth, panels).
+
+[0.2.0]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.2.0
+
+
 ## [0.1.0] — 2026-06-23
 
 The initial release: a provider-agnostic multi-agent critique pipeline with a

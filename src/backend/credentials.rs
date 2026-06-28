@@ -1,5 +1,5 @@
 // Copyright (C) 2026 Industrial Algebra
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 
 //! The credentials config: a standalone file mapping provider names to API
 //! keys and optional model/base_url overrides.
@@ -64,9 +64,9 @@ pub struct RetryConfig {
 /// One persona in a config-defined panel.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct PersonaSpec {
-    name: String,
-    framing: Option<String>,
-    focus: Option<String>,
+    pub name: String,
+    pub framing: Option<String>,
+    pub focus: Option<String>,
 }
 
 impl PersonaSpec {
