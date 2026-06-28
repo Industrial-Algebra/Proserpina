@@ -376,7 +376,7 @@ fn run_critique_cmd(
         // Progress output for humans (stderr, so stdout stays clean for piping).
         if !json {
             let panel_name = panel.unwrap_or("default");
-            eprintln!("Proserpina v0.1.0 — panel: {panel_name}\n");
+            eprintln!("Proserpina v0.2.1 — panel: {panel_name}\n");
         }
 
         proserpina::cli::run_critique(&text, &source, seed, config, json, panel, policy)
