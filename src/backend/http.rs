@@ -168,6 +168,63 @@ pub fn backoff_delay(policy: &RetryPolicy, attempt: u32, jitter_ms: u64) -> std:
 /// Jitter envelope added on top of each computed backoff (up to this many ms).
 const BACKOFF_JITTER_MS: u64 = 250;
 
+/// Validates that a provider's API key works by calling `GET /models`.
+///
+/// This is the cheapest possible validation: no tokens consumed, every
+/// OpenAI-compatible provider supports it, and it returns 401/403 if the key
+/// is invalid. Used by `proserpina auth check` to diagnose bad keys BEFORE a
+/// run, and optionally before roster assignment.
+///
+/// # Errors
+///
+/// Returns [`crate::ProserpinaError::AgentFailure`] if the key is rejected or the
+/// endpoint is unreachable.
+pub fn validate_provider(
+    config: &HttpConfig,
+    policy: &RetryPolicy,
+) -> Result<(), crate::ProserpinaError> {
+    let url = format!("{}/models", config.base_url.trim_end_matches('/'));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| {
+            crate::ProserpinaError::agent_failure(
+                format!("validate ({})", config.model),
+                format!("runtime build: {e}"),
+            )
+        })?;
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(policy.timeout_secs))
+        .build()
+        .map_err(|e| {
+            crate::ProserpinaError::agent_failure(
+                format!("validate ({})", config.model),
+                format!("client build: {e}"),
+            )
+        })?;
+    let label = format!("validate ({}/{})", config.base_url, config.model);
+    runtime.block_on(async {
+        let resp = client
+            .get(&url)
+            .bearer_auth(&config.api_key)
+            .send()
+            .await
+            .map_err(|e| {
+                crate::ProserpinaError::agent_failure(&label, format!("HTTP send: {e}"))
+            })?;
+        let status = resp.status();
+        if status.is_success() {
+            Ok(())
+        } else {
+            let body = resp.text().await.unwrap_or_default();
+            Err(crate::ProserpinaError::agent_failure(
+                &label,
+                format!("HTTP {status}: {body}"),
+            ))
+        }
+    })
+}
+
 /// Sends a chat-completion POST with timeout + retry + backoff.
 ///
 /// Retries transient failures ([`should_retry_status`]: 408/429/5xx) and
