@@ -1,0 +1,131 @@
+/* Karpal-style overrides for mdBook Navy theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+.navy {
+    --bg: #0a0a0f;
+    --fg: #e0e0e8;
+    --sidebar-bg: #08080d;
+    --sidebar-fg: #e0e0e8;
+    --sidebar-non-existant: #4a4a5a;
+    --sidebar-active: #00cccc;
+    --sidebar-spacer: #1a1a25;
+    --scrollbar: #1a1a25;
+    --icons: #6a6a7a;
+    --icons-hover: #00cccc;
+    --links: #00cccc;
+    --inline-code-color: #00cccc;
+    --theme-popup-bg: #111118;
+    --theme-popup-border: #1a1a25;
+    --quote-bg: rgba(0, 204, 204, 0.08);
+    --quote-border: #00cccc;
+    --table-border-color: #1a1a25;
+    --table-header-bg: #111118;
+    --table-alternate-bg: rgba(255, 255, 255, 0.02);
+    --searchbar-border-color: #1a1a25;
+    --searchbar-bg: #111118;
+    --searchbar-fg: #e0e0e8;
+    --searchbar-shadow-color: rgba(0, 0, 0, 0.3);
+    --searchresults-header-fg: #00cccc;
+    --searchresults-border-color: #1a1a25;
+    --searchresults-li-bg: #111118;
+    --search-mark-bg: rgba(0, 204, 204, 0.2);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+}
+
+body, .content {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.7;
+}
+
+code, pre, .hljs {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+}
+
+/* Heading glow effect */
+h1 {
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.15);
+}
+
+h2 {
+    text-shadow: 0 0 12px rgba(0, 255, 255, 0.08);
+}
+
+/* Code blocks */
+.navy pre {
+    background-color: #0e0e16;
+    border: 1px solid #1a1a25;
+    border-radius: 6px;
+}
+
+.navy code {
+    border-radius: 3px;
+}
+
+/* Tables */
+.navy table {
+    border-collapse: collapse;
+}
+
+.navy table th {
+    background-color: var(--table-header-bg);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #00cccc;
+}
+
+.navy table td, .navy table th {
+    padding: 0.6em 1em;
+}
+
+.navy table tr:nth-child(2n) {
+    background-color: var(--table-alternate-bg);
+}
+
+/* Sidebar */
+.navy .sidebar {
+    border-right: 1px solid #1a1a25;
+}
+
+.navy .sidebar .sidebar-scrollbox {
+    font-family: 'Inter', sans-serif;
+}
+
+.navy .sidebar a.active {
+    color: #00cccc;
+    font-weight: 600;
+}
+
+/* Blockquotes */
+.navy blockquote {
+    border-left: 3px solid #00cccc;
+    padding: 0.5em 1em;
+    margin: 1em 0;
+}
+
+/* Links */
+.navy a:hover {
+    color: #33dddd;
+    text-decoration: underline;
+}
+
+/* Chapter title */
+.navy .chapter li.chapter-item a {
+    transition: color 0.15s ease;
+}
+
+.navy .chapter li.chapter-item a:hover {
+    color: #00cccc;
+}
+
+/* Nav buttons */
+.navy .nav-chapters:hover {
+    color: #00cccc;
+}

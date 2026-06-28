@@ -7,6 +7,7 @@ description = "Multi-agent critique and cross-examination pipeline for documents
 license = "AGPL-3.0-only"
 repository = "https://github.com/industrial-algebra/Praxis"
 homepage = "https://github.com/industrial-algebra/Praxis"
+documentation = "https://docs.rs/praxis"
 keywords = ["multi-agent", "critique", "peer-review", "llm", "evaluation"]
 categories = ["command-line-utilities", "text-processing", "development-tools"]
 readme = "README.md"
@@ -19,6 +20,7 @@ cli = ["dep:clap"]                   # `praxis` binary + clap command line inter
 serde = ["dep:serde"]                # Serialize/Deserialize impls for core types
 json = ["serde", "dep:serde_json"]   # machine-readable JSON report output
 backend-http = ["serde", "dep:reqwest", "dep:tokio", "dep:serde_json", "dep:rand", "dep:toml"]  # OpenAI-compatible HTTP agent + multi-provider roster + credentials config
+keyring = ["dep:keyring", "backend-http"]  # OS keychain credential tier (keyring > env > config > registry); works on macOS Keychain + Windows Credential Manager, Linux gnome-keyring has a known limitation
 # parallel = ["dep:rayon"]           # batch critique via rayon (future)
 
 [dependencies]
@@ -30,6 +32,7 @@ reqwest = { version = "0.12", features = ["json"], optional = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"], optional = true }
 rand = { version = "0.9", optional = true }
 toml = { version = "0.8", optional = true }
+keyring = { version = "3", optional = true }
 
 [dev-dependencies]
 tempfile = "3"
@@ -43,3 +46,10 @@ required-features = ["cli"]
 [[example]]
 name = "deepseek_smoke"
 required-features = ["backend-http"]
+
+[[example]]
+name = "panel_smoke"
+required-features = ["backend-http", "cli"]
+
+[[example]]
+name = "library_usage"

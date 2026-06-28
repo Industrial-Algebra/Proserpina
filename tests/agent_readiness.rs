@@ -7,7 +7,7 @@
 #![cfg(feature = "backend-http")]
 
 use praxis::backend::http::{HttpAgent, HttpConfig};
-use praxis::{Agent, AgentId, Capabilities, Message, MessageKind, Persona, Plan, ProviderInfo};
+use praxis::{Agent, AgentId, Capabilities, Message, MessageKind, Persona, Plan};
 
 #[test]
 fn http_agent_error_names_the_model_not_just_the_persona() {
@@ -179,6 +179,7 @@ fn error_kind_is_a_stable_machine_string() {
 }
 
 #[test]
+#[cfg(feature = "json")]
 fn to_error_json_carries_kind_message_and_details() {
     let err = PraxisError::no_authed_providers(vec!["deepseek".to_owned(), "openai".to_owned()]);
     let json = err.to_error_json();

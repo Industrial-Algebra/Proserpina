@@ -252,6 +252,28 @@ pub fn resolve_configs(
     credentials: &Credentials,
     env_keys: &HashMap<String, String>,
 ) -> Result<Vec<HttpConfig>, PraxisError> {
+    resolve_configs_with_keyring(registry, credentials, env_keys, &HashMap::new())
+}
+
+/// Resolves the authed, effective HTTP configs with a keyring tier at the
+/// **highest** precedence: keyring > env > config-file > registry-default.
+///
+/// `keyring_keys` is a snapshot of the OS keychain, keyed the same way as
+/// `env_keys` (by the provider's `key_env_var`, e.g. `DEEPSEEK_API_KEY`).
+/// Passing it explicitly (rather than reading the keychain inside) keeps this
+/// function pure and unit-testable; see [`read_keyring`] for the real-keychain
+/// read (behind the `keyring` feature).
+///
+/// # Errors
+///
+/// Returns [`PraxisError::IncompleteCustomProvider`] if a custom provider is
+/// missing a required field.
+pub fn resolve_configs_with_keyring(
+    registry: &[Provider],
+    credentials: &Credentials,
+    env_keys: &HashMap<String, String>,
+    keyring_keys: &HashMap<String, String>,
+) -> Result<Vec<HttpConfig>, PraxisError> {
     let registry_names: std::collections::HashSet<&str> =
         registry.iter().map(|p| p.name()).collect();
     let mut out = Vec::new();
@@ -259,9 +281,11 @@ pub fn resolve_configs(
     // 1. Registry providers, possibly overridden by config.
     for reg in registry {
         let cfg = credentials.override_for(reg.name());
-        let api_key = env_keys
-            .get(reg.key_env_var())
+        let key_var = reg.key_env_var();
+        let api_key = keyring_keys
+            .get(key_var)
             .cloned()
+            .or_else(|| env_keys.get(key_var).cloned())
             .or_else(|| cfg.and_then(|c| c.api_key.clone()));
         let Some(api_key) = api_key else {
             continue; // not authed
@@ -285,7 +309,11 @@ pub fn resolve_configs(
             continue;
         }
         let env_var = env_var_name_for(name);
-        let api_key = env_keys.get(&env_var).cloned().or(cfg.api_key.clone());
+        let api_key = keyring_keys
+            .get(&env_var)
+            .cloned()
+            .or_else(|| env_keys.get(&env_var).cloned())
+            .or(cfg.api_key.clone());
         let model = cfg.model.clone();
         let base_url = cfg.base_url.clone();
         let mut missing: Vec<&'static str> = Vec::new();
@@ -338,7 +366,13 @@ pub fn authed_configs_with(
             env_keys.insert(var, v);
         }
     }
-    resolve_configs(Provider::registry(), &credentials, &env_keys)
+    // The keyring tier (highest precedence) when the feature is on; empty
+    // snapshot otherwise (compile-time branch, no runtime cost when off).
+    #[cfg(feature = "keyring")]
+    let keyring_keys = read_keyring_snapshot(&credentials);
+    #[cfg(not(feature = "keyring"))]
+    let keyring_keys: HashMap<String, String> = HashMap::new();
+    resolve_configs_with_keyring(Provider::registry(), &credentials, &env_keys, &keyring_keys)
 }
 
 /// The thin CLI-facing wrapper over [`resolve_configs`]: discovers the
@@ -356,4 +390,56 @@ pub fn authed_configs_with(
 /// if a custom provider is missing required fields.
 pub fn authed_configs() -> Result<Vec<HttpConfig>, PraxisError> {
     authed_configs_with(None)
+}
+
+// ---- OS keychain tier (behind the `keyring` feature) ----
+
+/// The keychain service name Praxis stores keys under. An entry for a
+/// provider is looked up as `praxis:<its key env var>` (e.g. `praxis:DEEPSEEK_API_KEY`).
+#[cfg(feature = "keyring")]
+pub const KEYRING_SERVICE: &str = "praxis";
+
+/// Reads one provider's key from the OS keychain, keyed by its env-var name.
+///
+/// Returns `Ok(Some(key))` if an entry exists under `praxis:<key_env_var>`,
+/// `Ok(None)` if no entry exists, or `Err` if the keychain itself is
+/// inaccessible (no Secret Service on a headless Linux box, etc.). A missing
+/// entry is the normal case (most providers won't have one); a keychain error
+/// is logged-but-skipped at the caller so a broken keychain doesn't sink the
+/// whole run.
+///
+/// # Errors
+///
+/// Returns [`PraxisError::KeyringAccess`] if the keychain backend errors.
+#[cfg(feature = "keyring")]
+pub fn read_keyring(key_env_var: &str) -> Result<Option<String>, PraxisError> {
+    let entry = keyring::Entry::new(KEYRING_SERVICE, key_env_var)
+        .map_err(|e| PraxisError::keyring_access(key_env_var, e))?;
+    match entry.get_password() {
+        Ok(p) => Ok(Some(p)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(PraxisError::keyring_access(key_env_var, e)),
+    }
+}
+
+/// Builds the keyring snapshot for [`authed_configs_with`]: reads the
+/// keychain for every registry provider's env var + every custom provider's
+/// derived env var. Failures are skipped (a broken keychain for one entry
+/// doesn't sink the run).
+#[cfg(feature = "keyring")]
+fn read_keyring_snapshot(credentials: &Credentials) -> HashMap<String, String> {
+    let mut out = HashMap::new();
+    for reg in Provider::registry() {
+        let var = reg.key_env_var();
+        if let Ok(Some(v)) = read_keyring(var) {
+            out.insert(var.to_owned(), v);
+        }
+    }
+    for name in credentials.iter().map(|(n, _)| n.as_str()) {
+        let var = env_var_name_for(name);
+        if let Ok(Some(v)) = read_keyring(&var) {
+            out.insert(var, v);
+        }
+    }
+    out
 }
