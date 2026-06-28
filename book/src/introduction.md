@@ -1,6 +1,6 @@
 # Introduction
 
-**Praxis** is a pipeline for multi-agent critique and cross-examination of
+**Proserpina** is a pipeline for multi-agent critique and cross-examination of
 documents that require intellectual rigor — pre-prints, roadmaps, plans, and
 specs.
 
@@ -11,7 +11,7 @@ naturally spans DeepSeek, Z.ai GLM, OpenAI, Moonshot, Alibaba, and Google.
 A dedicated **summarizer** LLM pass then clusters the panel's critiques into
 actionable, per-issue findings.
 
-> Praxis puts your document in the witness box and cross-examines it.
+> Proserpina puts your document in the witness box and cross-examines it.
 
 ## Why multi-agent critique?
 
@@ -29,10 +29,10 @@ critics converging on one finding) versus where it *contested*.
   message passing. `parallel` and `rounds` are templates over one core engine.
 - **Spec-shaped.** Clean separation between policy (panels, roster, retry) and
   execution (the runner, the graph walk).
-- **Agent-discoverable.** `praxis capabilities`, `--dry-run`, structured error
-  JSON, and documented exit codes make Praxis callable on the fly by AI agents.
+- **Agent-discoverable.** `proserpina capabilities`, `--dry-run`, structured error
+  JSON, and documented exit codes make Proserpina callable on the fly by AI agents.
 
 ## Status
 
-v0.1.0. See the [CHANGELOG](https://github.com/Industrial-Algebra/Praxis/blob/main/CHANGELOG.md)
+v0.1.0. See the [CHANGELOG](https://github.com/Industrial-Algebra/Proserpina/blob/main/CHANGELOG.md)
 for the full feature set.

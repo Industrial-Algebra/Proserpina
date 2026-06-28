@@ -10,7 +10,7 @@
 
 #![cfg(all(feature = "cli", feature = "backend-http", feature = "json"))]
 
-use praxis::cli::run_critique;
+use proserpina::cli::run_critique;
 
 #[test]
 fn run_critique_with_json_errors_cleanly_when_no_keys_set() {
@@ -31,7 +31,7 @@ fn run_critique_with_json_errors_cleanly_when_no_keys_set() {
         None,
         true,
         None,
-        praxis::backend::http::RetryPolicy::NONE,
+        proserpina::backend::http::RetryPolicy::NONE,
     );
     assert!(result.is_err());
 }

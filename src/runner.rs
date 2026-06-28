@@ -15,7 +15,7 @@
 use std::collections::HashMap;
 
 use crate::agent::{Agent, AgentId};
-use crate::error::PraxisError;
+use crate::error::ProserpinaError;
 use crate::graph::InteractionGraph;
 use crate::message::{Message, MessageKind};
 use crate::subject::Subject;
@@ -43,7 +43,7 @@ impl Runner {
     /// # Examples
     ///
     /// ```
-    /// use praxis::{AgentId, InteractionGraph, Runner, Topology};
+    /// use proserpina::{AgentId, InteractionGraph, Runner, Topology};
     /// let graph = InteractionGraph::from(Topology::parallel(vec![AgentId::new("a")]));
     /// let runner = Runner::new(graph);
     /// ```
@@ -77,10 +77,10 @@ impl Runner {
     ///
     /// # Errors
     ///
-    /// Returns [`PraxisError::AgentFailure`] if a registered agent fails to
-    /// respond, or [`PraxisError::MissingAgent`] if a graph node has no agent
+    /// Returns [`ProserpinaError::AgentFailure`] if a registered agent fails to
+    /// respond, or [`ProserpinaError::MissingAgent`] if a graph node has no agent
     /// registered under its id.
-    pub fn execute(&mut self, subject: &Subject) -> Result<Transcript, PraxisError> {
+    pub fn execute(&mut self, subject: &Subject) -> Result<Transcript, ProserpinaError> {
         let system = AgentId::new(SYSTEM_AGENT);
         match self.graph.clone() {
             InteractionGraph::Parallel { .. } => self.execute_parallel(subject, &system),
@@ -91,17 +91,17 @@ impl Runner {
     }
 
     /// Returns a mutable reference to the agent registered under `id`.
-    fn agent_mut(&mut self, id: &AgentId) -> Result<&mut Box<dyn Agent>, PraxisError> {
+    fn agent_mut(&mut self, id: &AgentId) -> Result<&mut Box<dyn Agent>, ProserpinaError> {
         self.agents
             .get_mut(id)
-            .ok_or_else(|| PraxisError::missing_agent(id.clone()))
+            .ok_or_else(|| ProserpinaError::missing_agent(id.clone()))
     }
 
     fn execute_parallel(
         &mut self,
         subject: &Subject,
         system: &AgentId,
-    ) -> Result<Transcript, PraxisError> {
+    ) -> Result<Transcript, ProserpinaError> {
         let mut transcript = Transcript::new();
         let critics: Vec<AgentId> = self.graph.critics().to_vec();
 
@@ -123,7 +123,7 @@ impl Runner {
         subject: &Subject,
         system: &AgentId,
         max_rounds: usize,
-    ) -> Result<Transcript, PraxisError> {
+    ) -> Result<Transcript, ProserpinaError> {
         let mut transcript = Transcript::new();
         if max_rounds == 0 {
             return Ok(transcript);

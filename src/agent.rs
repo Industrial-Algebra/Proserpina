@@ -6,7 +6,7 @@
 use crate::persona::Persona;
 use std::fmt;
 
-/// A stable identifier for an agent within a single Praxis run.
+/// A stable identifier for an agent within a single Proserpina run.
 ///
 /// Implemented as a newtype over `String` so identities are distinct from
 /// arbitrary text and compared by name. (An optional amari-backed phantom-typed
@@ -20,7 +20,7 @@ impl AgentId {
     /// # Examples
     ///
     /// ```
-    /// use praxis::AgentId;
+    /// use proserpina::AgentId;
     /// let id = AgentId::new("methodologist");
     /// assert_eq!(id.as_str(), "methodologist");
     /// ```
@@ -59,10 +59,10 @@ pub trait Agent {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::error::PraxisError::AgentFailure`] when the backend
+    /// Returns [`crate::error::ProserpinaError::AgentFailure`] when the backend
     /// cannot produce a response.
     fn respond(
         &mut self,
         msg: &crate::message::Message,
-    ) -> Result<crate::message::Message, crate::error::PraxisError>;
+    ) -> Result<crate::message::Message, crate::error::ProserpinaError>;
 }

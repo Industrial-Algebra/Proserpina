@@ -3,7 +3,7 @@
 
 //! The document under critique.
 
-/// A `Subject` is whatever a Praxis run is cross-examining.
+/// A `Subject` is whatever a Proserpina run is cross-examining.
 ///
 /// v1 holds opaque markdown text plus an optional source path. Later, an
 /// extraction stage may break a `Subject` into claims or sections; the graph
@@ -23,7 +23,7 @@ impl Subject {
     /// # Examples
     ///
     /// ```
-    /// use praxis::Subject;
+    /// use proserpina::Subject;
     /// let s = Subject::from_markdown("# Plan\n\nbody", "roadmap.md");
     /// assert_eq!(s.text(), "# Plan\n\nbody");
     /// assert_eq!(s.source(), Some("roadmap.md"));

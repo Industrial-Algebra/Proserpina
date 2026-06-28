@@ -1,4 +1,4 @@
-# Praxis — Credentials Config Design
+# Proserpina — Credentials Config Design
 
 - **Date:** 2026-06-21
 - **Status:** Approved (design phase; implementation via TDD)
@@ -11,10 +11,10 @@ The roster (PR #7) filters providers by API keys present as environment
 variables. In practice only DeepSeek (and Z.ai) have plain env-var keys —
 pi mediates the others (OpenAI, Google) via OAuth and some (Moonshot) via
 specialized extensions, none of which expose plain keys to a separate process
-like Praxis. So the roster's diversity value is undermined: without reachable
+like Proserpina. So the roster's diversity value is undermined: without reachable
 keys, it degrades to "DeepSeek (+ Z.ai when it has balance)."
 
-This design adds a **standalone credentials config file** so Praxis can reach
+This design adds a **standalone credentials config file** so Proserpina can reach
 all six providers (and any custom OpenAI-compatible endpoint). As a bonus it
 also solves the **model-drift** problem flagged in PR #7: the same file lets
 you override the registry's `glm-4-plus` with the current `glm-5.2`, pick a
@@ -22,15 +22,15 @@ preferred OpenAI model, etc., without code changes.
 
 ## 2. Key Design Decisions
 
-1. **Standalone config file, not pi-integration.** Praxis reads its own
-   `~/.config/praxis/credentials.toml`; it does not couple to pi's credential
+1. **Standalone config file, not pi-integration.** Proserpina reads its own
+   `~/.config/proserpina/credentials.toml`; it does not couple to pi's credential
    storage. You obtain each key once from the provider dashboard. Standard
-   multi-CLI pattern; keeps Praxis decoupled and publishable.
+   multi-CLI pattern; keeps Proserpina decoupled and publishable.
 2. **Per-provider sections with optional model/base_url overrides.** One file
    for auth *and* personalization. Solves model drift in the same feature.
 3. **Custom-provider support.** A config section whose name doesn't match a
    registry provider is treated as a custom provider (must supply `base_url`
-   + `model` + `api_key`). This lets Praxis reach any OpenAI-compatible
+   + `model` + `api_key`). This lets Proserpina reach any OpenAI-compatible
    endpoint — Ollama, LM Studio, OpenRouter, a proxy — not just the six
    presets.
 4. **Resolution precedence: env > config > registry-default.** Env vars are
@@ -46,11 +46,11 @@ preferred OpenAI model, etc., without code changes.
 
 **Location** (first found wins):
 1. `--config <path>` CLI flag (explicit override)
-2. `PRAXIS_CONFIG` environment variable
-3. `$XDG_CONFIG_HOME/praxis/credentials.toml`
-4. `~/.config/praxis/credentials.toml`
+2. `PROSERPINA_CONFIG` environment variable
+3. `$XDG_CONFIG_HOME/proserpina/credentials.toml`
+4. `~/.config/proserpina/credentials.toml`
 
-A missing config file is **not an error** — Praxis proceeds with whatever env
+A missing config file is **not an error** — Proserpina proceeds with whatever env
 keys are available (degrading gracefully to the PR #7 behavior). A malformed
 file *is* an error.
 
@@ -121,9 +121,9 @@ pub struct ProviderOverride {
 pub struct Credentials { providers: HashMap<String, ProviderOverride> }
 
 impl Credentials {
-    pub fn from_str(toml: &str) -> Result<Self, PraxisError>;
-    pub fn from_path(path: &Path) -> Result<Self, PraxisError>;
-    pub fn discover() -> Result<Self, PraxisError>;  // finds the default path; missing = empty
+    pub fn from_str(toml: &str) -> Result<Self, ProserpinaError>;
+    pub fn from_path(path: &Path) -> Result<Self, ProserpinaError>;
+    pub fn discover() -> Result<Self, ProserpinaError>;  // finds the default path; missing = empty
 }
 
 /// Pure: resolve the authed, effective providers given registry + config + env.
@@ -131,20 +131,20 @@ pub fn resolve_providers(
     registry: &[Provider],
     credentials: &Credentials,
     env_keys: &HashMap<String, String>,  // env var name -> value
-) -> Result<Vec<Provider>, PraxisError>;
+) -> Result<Vec<Provider>, ProserpinaError>;
 
 /// Convenience for the CLI: discover config + read real env + resolve.
-pub fn authed_providers() -> Result<Vec<Provider>, PraxisError>;
+pub fn authed_providers() -> Result<Vec<Provider>, ProserpinaError>;
 ```
 
 New error variants:
-- `PraxisError::MalformedCredentials { path, detail }`
-- `PraxisError::IncompleteCustomProvider { name, missing }` (custom section
+- `ProserpinaError::MalformedCredentials { path, detail }`
+- `ProserpinaError::IncompleteCustomProvider { name, missing }` (custom section
   missing required `base_url`/`model`/`api_key`)
 
 ## 7. CLI Integration
 
-- `praxis critique` gains `--config <path>` (optional; overrides discovery).
+- `proserpina critique` gains `--config <path>` (optional; overrides discovery).
 - The roster path (`run_critique`) calls `authed_providers()` instead of
   filtering `Provider::registry()` by `config_from_env`.
 

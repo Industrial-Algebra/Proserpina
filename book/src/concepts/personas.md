@@ -31,6 +31,6 @@ Select one with `--panel <name>`. Define your own under `[panels.NAME]` in the
 
 Each critic in a panel is assigned a provider drawn (seeded, reproducibly)
 from your authed set via the [roster](../guide/providers.md). A 5-critic
-`--panel panel` run naturally spans multiple providers — the core of Praxis's
+`--panel panel` run naturally spans multiple providers — the core of Proserpina's
 diversity value. Two critics may share a provider; persona- plus
 model-diversity together is the goal, not provider uniqueness.

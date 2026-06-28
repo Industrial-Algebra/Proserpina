@@ -5,10 +5,10 @@
 
 #![cfg(feature = "backend-http")]
 
-use praxis::backend::http::HttpConfig;
-use praxis::summary::{parse_findings, render_summary_prompt, summarize};
-use praxis::{AgentId, Finding, Severity};
-use praxis::{Message, MessageKind, Subject, Transcript};
+use proserpina::backend::http::HttpConfig;
+use proserpina::summary::{parse_findings, render_summary_prompt, summarize};
+use proserpina::{AgentId, Finding, Severity};
+use proserpina::{Message, MessageKind, Subject, Transcript};
 
 #[test]
 fn finding_carries_the_full_rich_field_set() {
@@ -60,11 +60,11 @@ fn finding_builder_is_chainable_and_must_use() {
     assert_eq!(f.location.as_deref(), Some("line 3"));
 }
 
-// ---- praxis-finding block parser ----
+// ---- proserpina-finding block parser ----
 
 #[test]
 fn parse_findings_extracts_a_single_well_formed_block() {
-    let body = "Some preamble from the model.\n\n```praxis-finding\nseverity: blocker\ncategory: methodology\nsummary: Section 2 is unsupported.\nlocation: §2\nquote: We will prove P=NP.\nsuggested_change: Add a proof sketch.\nsupporting_critics: methodologist, red-team\n```\n\nSome trailing prose.";
+    let body = "Some preamble from the model.\n\n```proserpina-finding\nseverity: blocker\ncategory: methodology\nsummary: Section 2 is unsupported.\nlocation: §2\nquote: We will prove P=NP.\nsuggested_change: Add a proof sketch.\nsupporting_critics: methodologist, red-team\n```\n\nSome trailing prose.";
 
     let findings = parse_findings(body);
     assert_eq!(findings.len(), 1);
@@ -83,7 +83,7 @@ fn parse_findings_extracts_a_single_well_formed_block() {
 
 #[test]
 fn parse_findings_extracts_multiple_blocks() {
-    let body = "```praxis-finding\nseverity: major\nsummary: First issue.\n```\n\nbetween\n\n```praxis-finding\nseverity: minor\nsummary: Second issue.\n```";
+    let body = "```proserpina-finding\nseverity: major\nsummary: First issue.\n```\n\nbetween\n\n```proserpina-finding\nseverity: minor\nsummary: Second issue.\n```";
     let findings = parse_findings(body);
     assert_eq!(findings.len(), 2);
     assert_eq!(findings[0].summary(), "First issue.");
@@ -96,7 +96,7 @@ fn parse_findings_extracts_multiple_blocks() {
 fn parse_findings_treats_unknown_severity_as_major() {
     // Graceful degradation: an unrecognized severity doesn't fail the parse;
     // it defaults to Major so the finding is still surfaced.
-    let body = "```praxis-finding\nseverity: critical-ish\nsummary: X.\n```";
+    let body = "```proserpina-finding\nseverity: critical-ish\nsummary: X.\n```";
     let findings = parse_findings(body);
     assert_eq!(findings.len(), 1);
     assert_eq!(findings[0].severity(), &Severity::Major);
@@ -104,7 +104,7 @@ fn parse_findings_treats_unknown_severity_as_major() {
 
 #[test]
 fn parse_findings_accepts_optional_fields_as_none() {
-    let body = "```praxis-finding\nseverity: info\nsummary: Just a note.\n```";
+    let body = "```proserpina-finding\nseverity: info\nsummary: Just a note.\n```";
     let findings = parse_findings(body);
     assert_eq!(findings.len(), 1);
     let f = &findings[0];
@@ -125,7 +125,7 @@ fn parse_findings_returns_empty_when_no_blocks_present() {
 #[test]
 fn parse_findings_supporting_critics_handles_single_name() {
     let body =
-        "```praxis-finding\nseverity: major\nsummary: X.\nsupporting_critics: lone-critic\n```";
+        "```proserpina-finding\nseverity: major\nsummary: X.\nsupporting_critics: lone-critic\n```";
     let findings = parse_findings(body);
     assert_eq!(
         findings[0].supporting_critics(),
@@ -154,9 +154,9 @@ fn render_summary_prompt_includes_subject_and_transcript_turns() {
 
     let prompt = render_summary_prompt(&subject, &transcript);
 
-    // System message instructs the model to emit praxis-finding blocks.
+    // System message instructs the model to emit proserpina-finding blocks.
     assert_eq!(prompt[0].role, "system");
-    assert!(prompt[0].content.contains("praxis-finding"));
+    assert!(prompt[0].content.contains("proserpina-finding"));
 
     // User message carries the subject text and each transcript turn.
     assert_eq!(prompt[1].role, "user");
@@ -201,7 +201,7 @@ fn live_deepseek_summary_produces_structured_findings() {
         &subject,
         &transcript,
         &config,
-        &praxis::backend::http::RetryPolicy::DEFAULT,
+        &proserpina::backend::http::RetryPolicy::DEFAULT,
     )
     .expect("live summarizer call should succeed");
     assert!(!findings.is_empty(), "summarizer should produce findings");

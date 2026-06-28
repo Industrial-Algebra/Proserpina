@@ -10,8 +10,8 @@
 
 #![cfg(feature = "backend-http")]
 
-use praxis::backend::http::{parse_completion_response, render_prompt, HttpAgent, HttpConfig};
-use praxis::{AgentId, Message, MessageKind, Persona};
+use proserpina::backend::http::{parse_completion_response, render_prompt, HttpAgent, HttpConfig};
+use proserpina::{AgentId, Message, MessageKind, Persona};
 
 #[test]
 fn render_prompt_emits_system_message_from_persona() {
@@ -108,7 +108,7 @@ fn parse_completion_response_errors_on_missing_choices() {
 
 #[test]
 fn http_agent_implements_the_agent_trait() {
-    use praxis::Agent;
+    use proserpina::Agent;
     let agent = HttpAgent::new(
         AgentId::new("methodologist"),
         Persona::new("Methodologist"),
@@ -132,7 +132,7 @@ fn http_agent_implements_the_agent_trait() {
 #[test]
 #[ignore]
 fn live_deepseek_responds_with_a_critique_for_a_prompt() {
-    use praxis::Agent;
+    use proserpina::Agent;
     let Ok(key) = std::env::var("DEEPSEEK_API_KEY") else {
         eprintln!("skipped: DEEPSEEK_API_KEY not set");
         return;

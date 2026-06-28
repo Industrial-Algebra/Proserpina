@@ -38,7 +38,7 @@ timeout_secs = 120
 **CLI** (overrides config; config overrides default):
 
 ```bash
-praxis critique doc.md --max-attempts 5 --timeout 120
+proserpina critique doc.md --max-attempts 5 --timeout 120
 ```
 
 ## Observability
@@ -46,7 +46,7 @@ praxis critique doc.md --max-attempts 5 --timeout 120
 Each retry logs to stderr so a retrying run isn't silent:
 
 ```
-praxis: Devil's Advocate (glm-5.2) attempt 1/3 failed, retrying in 532ms
+proserpina: Devil's Advocate (glm-5.2) attempt 1/3 failed, retrying in 532ms
 ```
 
 The final failure (if all attempts exhaust) goes through the normal error path

@@ -7,7 +7,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use praxis::backend::http::RetryPolicy;
+use proserpina::backend::http::RetryPolicy;
 
 #[test]
 fn default_policy_has_sensible_values() {
@@ -43,7 +43,7 @@ fn policy_builder_overrides_fields() {
 
 #[test]
 fn should_retry_returns_true_for_transient_statuses() {
-    use praxis::backend::http::should_retry_status;
+    use proserpina::backend::http::should_retry_status;
     // Rate-limit, request-timeout, and all server errors retry.
     assert!(should_retry_status(429));
     assert!(should_retry_status(408));
@@ -55,7 +55,7 @@ fn should_retry_returns_true_for_transient_statuses() {
 
 #[test]
 fn should_retry_returns_false_for_non_transient_statuses() {
-    use praxis::backend::http::should_retry_status;
+    use proserpina::backend::http::should_retry_status;
     // Caller bugs and redirects are NOT retried — retrying won't fix them.
     assert!(!should_retry_status(200));
     assert!(!should_retry_status(400));
@@ -69,7 +69,7 @@ fn should_retry_returns_false_for_non_transient_statuses() {
 
 #[test]
 fn backoff_delay_grows_exponentially_and_caps() {
-    use praxis::backend::http::backoff_delay;
+    use proserpina::backend::http::backoff_delay;
     use std::time::Duration;
     let p = RetryPolicy::DEFAULT;
     // attempt 1 -> delay before attempt 2 = initial = 500ms.
@@ -84,7 +84,7 @@ fn backoff_delay_grows_exponentially_and_caps() {
 
 #[test]
 fn backoff_delay_adds_jitter_within_bounds() {
-    use praxis::backend::http::backoff_delay;
+    use proserpina::backend::http::backoff_delay;
     let p = RetryPolicy::DEFAULT;
     // With jitter 100ms, the delay must be in [base, base + 100].
     for _ in 0..50 {
@@ -100,7 +100,7 @@ fn backoff_delay_adds_jitter_within_bounds() {
 // one per inbound request, then closes the connection. Lets us assert the
 // retry loop's behavior deterministically without a real provider.
 
-use praxis::backend::http::send_chat_completion;
+use proserpina::backend::http::send_chat_completion;
 
 /// Spawns a server returning `statuses` in order (one per request), then a
 /// final 200 if the sequence is exhausted. Returns the base URL and a handle
@@ -255,7 +255,7 @@ fn send_does_not_retry_non_transient_status() {
 
 // ---- RetryPolicy::resolve (precedence: CLI > config > default) ----
 
-use praxis::backend::credentials::RetryConfig;
+use proserpina::backend::credentials::RetryConfig;
 
 #[test]
 fn resolve_uses_defaults_when_nothing_specified() {
@@ -294,7 +294,7 @@ fn resolve_cli_overrides_config() {
 
 #[test]
 fn resolve_reads_retry_from_credentials_toml() {
-    use praxis::backend::credentials::Credentials;
+    use proserpina::backend::credentials::Credentials;
     let toml = r#"
 [retry]
 max_attempts = 4

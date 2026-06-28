@@ -1,12 +1,12 @@
 // Copyright (C) 2026 Industrial Algebra
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//! # Praxis
+//! # Proserpina
 //!
 //! Multi-agent critique and cross-examination pipeline for documents that
 //! require intellectual rigor — pre-prints, roadmaps, plans, and specs.
 //!
-//! Praxis runs a configurable ensemble of critic *personas* over a document via
+//! Proserpina runs a configurable ensemble of critic *personas* over a document via
 //! a **provider-agnostic interaction-graph engine**. LLM backends are pluggable
 //! behind an `Agent` trait; an `EchoAgent` backend makes the entire engine
 //! deterministic and testable with zero LLM dependencies.
@@ -22,14 +22,14 @@
 //!   `Transcript` and a synthesized `Report` of `Finding`s.
 //!
 //! > **Status:** scaffold. Modules land incrementally via test-driven
-//! > development (see `docs/plans/2026-06-19-praxis-design.md`). This file
+//! > development (see `docs/plans/2026-06-19-proserpina-design.md`). This file
 //! > ships the crate-level documentation and the feature surface; individual
 //! > modules are added in subsequent PRs.
 //!
 //! ## Features
 //!
 //! - `std` (default): standard library support
-//! - `cli`: the `praxis` binary and clap command line interface
+//! - `cli`: the `proserpina` binary and clap command line interface
 //! - `serde`: `Serialize`/`Deserialize` impls for core types
 //! - `json`: machine-readable JSON report output (implies `serde`)
 //! - `backend-http`: OpenAI-compatible HTTP agent, multi-provider roster,
@@ -44,7 +44,7 @@
 //! and renders a markdown critique report:
 //!
 //! ```text
-//! praxis critique path/to/roadmap.md -o critique.md
+//! proserpina critique path/to/roadmap.md -o critique.md
 //! ```
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -69,7 +69,7 @@ pub use agent::{Agent, AgentId};
 #[cfg(feature = "backend-http")]
 pub use agent_info::{Capabilities, Plan, PlanSlot, ProviderInfo};
 pub use backend::EchoAgent;
-pub use error::PraxisError;
+pub use error::ProserpinaError;
 pub use graph::{InteractionGraph, Topology};
 pub use message::{Message, MessageKind};
 pub use persona::Persona;

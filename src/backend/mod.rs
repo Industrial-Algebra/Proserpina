@@ -12,7 +12,7 @@
 //!   feature) assigns authed providers to critic personas at random.
 //! - The credentials config ([`credentials`] module, behind the `backend-http`
 //!   feature) reads provider keys and model overrides from a TOML file so
-//!   Praxis can reach providers whose keys aren't in the environment.
+//!   Proserpina can reach providers whose keys aren't in the environment.
 
 pub mod echo;
 

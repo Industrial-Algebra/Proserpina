@@ -1,20 +1,20 @@
-# Praxis — Agent-Readiness Cluster Design
+# Proserpina — Agent-Readiness Cluster Design
 
 - **Date:** 2026-06-21
 - **Status:** Approved (design phase; implementation via TDD)
 - **Branch:** `feature/agent-readiness`
 - **Depends on:** `backend-http` (PR #6), roster (#7), credentials (#8), rich
   findings (#9)
-- **Motivation:** Justin intends to deploy Praxis across all his dev
+- **Motivation:** Justin intends to deploy Proserpina across all his dev
   environments and call it on the fly from AI coding agents. This PR makes the
   CLI thoroughly agent-discoverable.
 
 ## 1. Purpose
 
-An agent calling Praxis needs four moves: ask what it can do, ask what a run
+An agent calling Proserpina needs four moves: ask what it can do, ask what a run
 would do, do it, and understand failures. This PR adds the missing three
 (self-describe, dry-run, structured errors) and a cross-cutting provider-
-attribution fix. Praxis stays a **CLI** (the lightest, most universal
+attribution fix. Proserpina stays a **CLI** (the lightest, most universal
 agent-callable form) — MCP server mode is explicitly deferred.
 
 ## 2. Key Design Decisions
@@ -22,14 +22,14 @@ agent-callable form) — MCP server mode is explicitly deferred.
 1. **CLI-only, no MCP.** A standalone binary with `--json` + self-describe is
    the most universal agent-callable form; works with any agent (pi, Claude
    Code, Codex, Gemini) with zero integration. MCP couples to MCP-aware
-   clients and turns Praxis into a server.
-2. **Capabilities carries DYNAMIC auth state.** `praxis capabilities` reports
+   clients and turns Proserpina into a server.
+2. **Capabilities carries DYNAMIC auth state.** `proserpina capabilities` reports
    not just the registry but which providers are *currently authed* in this
    environment (reads config + env). An agent learns what it can actually do
-   right now, not just what Praxis could do in theory.
-3. **Praxis-specific exit codes (10–15, 70).** Small, self-documenting, and
+   right now, not just what Proserpina could do in theory.
+3. **Proserpina-specific exit codes (10–15, 70).** Small, self-documenting, and
    emitted in `capabilities` so an agent can learn the scheme programmatically.
-   Not BSD sysexits — clearer for Praxis-specific semantics.
+   Not BSD sysexits — clearer for Proserpina-specific semantics.
 4. **Error JSON is `--json`-gated.** Humans get prose on stderr by default;
    agents opt into structured JSON via `--json`. Avoids noisy stderr for
    interactive use while giving agents a clean machine contract.
@@ -44,7 +44,7 @@ Advocate" failed`). Prepend provider/model: `agent "Devil's Advocate"
 type change. Makes every multi-provider failure self-diagnosing (the gap from
 the 429 debugging session).
 
-## 4. `praxis capabilities` (the keystone)
+## 4. `proserpina capabilities` (the keystone)
 
 New subcommand emitting JSON (default, since it's machine-facing):
 
@@ -67,10 +67,10 @@ New subcommand emitting JSON (default, since it's machine-facing):
   against the real config + env.
 - `personas` reflects the current default panel (configurable panels are a
   separate follow-up; this exposes what's there now).
-- `exit_codes` documents the scheme below, so an agent learns it from Praxis
+- `exit_codes` documents the scheme below, so an agent learns it from Proserpina
   itself.
 
-## 5. `praxis critique --dry-run`
+## 5. `proserpina critique --dry-run`
 
 Resolves the roster and emits a **Plan** JSON without making any API calls:
 
@@ -97,7 +97,7 @@ When `--json` is set and a run fails, emit on **stderr**:
 {"error": {"kind": "no_authed_providers", "message": "...", "tried": ["deepseek","openai",...]}}
 ```
 
-Exit codes (Praxis-specific, documented in `capabilities`):
+Exit codes (Proserpina-specific, documented in `capabilities`):
 
 | Code | Meaning                  | Variant                |
 |------|--------------------------|------------------------|
@@ -111,7 +111,7 @@ Exit codes (Praxis-specific, documented in `capabilities`):
 | 15   | missing agent            | `MissingAgent`         |
 | 70   | other / internal         | fallback               |
 
-`PraxisError` gains `exit_code()` and `to_error_json()` methods. The binary
+`ProserpinaError` gains `exit_code()` and `to_error_json()` methods. The binary
 maps errors → code + JSON-on-stderr (when `--json`).
 
 ## 7. Crate Shape
@@ -132,14 +132,14 @@ Each step RED → GREEN → REFACTOR.
 1. **Provider attribution** — `HttpAgent` errors include `(model)`.
 2. **`Capabilities` type + builder** — pure; takes the authed-provider snapshot.
 3. **`Plan` type + dry-run resolution** — resolves roster without calls.
-4. **`PraxisError::exit_code` + `error_kind` + `to_error_json`** — variant →
+4. **`ProserpinaError::exit_code` + `error_kind` + `to_error_json`** — variant →
    code/kind mapping + structured JSON.
 5. **CLI wiring** — `capabilities` subcommand, `--dry-run`, `--json` error
    path + exit codes.
 
 ## 9. Deliberately Deferred
 
-- **MCP server mode** — Praxis stays CLI; MCP is a heavier, separate path.
+- **MCP server mode** — Proserpina stays CLI; MCP is a heavier, separate path.
 - **Configurable persona panels** — capabilities *reports* the current panel;
   making it configurable is separate.
 - **Streaming output** — emit findings as they parse, for long runs.
@@ -151,5 +151,5 @@ Each step RED → GREEN → REFACTOR.
   `schema_version` field may be needed for evolution.
 - **`--markdown` flag on capabilities** — human-readable capabilities (currently
   JSON-default since it's machine-facing).
-- **Shell-completion generation** — `praxis completions <shell>` via clap-
+- **Shell-completion generation** — `proserpina completions <shell>` via clap-
   complete, for interactive ergonomics.

@@ -27,18 +27,10 @@
     }
   },
   "tdd": {
-    "phase": "red-pending",
-    "testFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/tests/keyring.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/tests/agent_readiness.rs"
-    ],
-    "sourceFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/error.rs",
-      "/tmp/keyring_probe/src/main.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/lib.rs"
-    ],
-    "redVerificationPending": true
+    "phase": "idle",
+    "testFiles": [],
+    "sourceFiles": [],
+    "redVerificationPending": false
   },
   "debug": {
     "active": false,

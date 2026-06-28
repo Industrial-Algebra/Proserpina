@@ -3,7 +3,7 @@
 
 //! Integration tests for the deterministic echo backend.
 
-use praxis::{Agent, AgentId, EchoAgent, Message, MessageKind, Persona};
+use proserpina::{Agent, AgentId, EchoAgent, Message, MessageKind, Persona};
 
 #[test]
 fn echo_agent_exposes_its_id_and_persona() {

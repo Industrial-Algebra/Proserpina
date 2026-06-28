@@ -1,7 +1,7 @@
-# Errors: `PraxisError`
+# Errors: `ProserpinaError`
 
 ```rust
-pub enum PraxisError {
+pub enum ProserpinaError {
     AgentFailure { agent_id: String, detail: String },   // exit 11
     MissingAgent(AgentId),                               // exit 15
     NoAuthedProviders(Vec<String>),                      // exit 10
@@ -12,7 +12,7 @@ pub enum PraxisError {
 }
 ```
 
-Every fallible public operation returns `Result<_, PraxisError>`. Library code
+Every fallible public operation returns `Result<_, ProserpinaError>`. Library code
 never panics; all failure modes flow through this enum.
 
 Each variant carries enough context to locate the failure, and the
@@ -20,7 +20,7 @@ agent-facing methods make failures machine-consumable:
 
 - `error_kind()` — a stable machine string (`"agent_failure"`, etc.) for
   switching without parsing the human message.
-- `exit_code()` — the Praxis-specific exit code (above).
+- `exit_code()` — the Proserpina-specific exit code (above).
 - `to_error_json()` (behind `json`) — `{error: {kind, message, details}}` for
   structured stderr output when `--json` is set.
 

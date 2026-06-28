@@ -184,9 +184,9 @@ pub async fn send_chat_completion(
     body: &serde_json::Value,
     policy: &RetryPolicy,
     label: &str,
-) -> Result<String, crate::PraxisError> {
+) -> Result<String, crate::ProserpinaError> {
     let max = policy.max_attempts;
-    let mut last_err: Option<crate::PraxisError> = None;
+    let mut last_err: Option<crate::ProserpinaError> = None;
 
     for attempt in 1..=max {
         let result = client
@@ -201,20 +201,22 @@ pub async fn send_chat_completion(
                 let status = resp.status();
                 let status_code = status.as_u16();
                 let text = resp.text().await.map_err(|e| {
-                    crate::PraxisError::agent_failure(label, format!("HTTP body: {e}"))
+                    crate::ProserpinaError::agent_failure(label, format!("HTTP body: {e}"))
                 })?;
                 if status.is_success() {
                     return Ok(text);
                 }
-                let err =
-                    crate::PraxisError::agent_failure(label, format!("HTTP {status_code}: {text}"));
+                let err = crate::ProserpinaError::agent_failure(
+                    label,
+                    format!("HTTP {status_code}: {text}"),
+                );
                 if !should_retry_status(status_code) || attempt == max {
                     return Err(err);
                 }
                 last_err = Some(err);
             }
             Err(e) => {
-                let err = crate::PraxisError::agent_failure(label, format!("HTTP send: {e}"));
+                let err = crate::ProserpinaError::agent_failure(label, format!("HTTP send: {e}"));
                 if attempt == max {
                     return Err(err);
                 }
@@ -226,14 +228,14 @@ pub async fn send_chat_completion(
         // Sleep + retry. (Only reached when we will retry.)
         let delay = backoff_delay(policy, attempt, BACKOFF_JITTER_MS);
         eprintln!(
-            "praxis: {label} attempt {attempt}/{max} failed, retrying in {}ms",
+            "proserpina: {label} attempt {attempt}/{max} failed, retrying in {}ms",
             delay.as_millis()
         );
         tokio::time::sleep(delay).await;
     }
 
     Err(last_err.unwrap_or_else(|| {
-        crate::PraxisError::agent_failure(label, "retry loop exited without an error")
+        crate::ProserpinaError::agent_failure(label, "retry loop exited without an error")
     }))
 }
 
@@ -305,15 +307,18 @@ pub fn render_prompt(persona: &Persona, incoming: &Message) -> Vec<ChatMessage> 
 ///
 /// # Errors
 ///
-/// Returns [`crate::error::PraxisError::AgentFailure`] if the body is
+/// Returns [`crate::error::ProserpinaError::AgentFailure`] if the body is
 /// malformed or has no choices.
 pub fn parse_completion_response(
     body: &str,
     author: AgentId,
     kind: MessageKind,
-) -> Result<Message, crate::error::PraxisError> {
+) -> Result<Message, crate::error::ProserpinaError> {
     let parsed: serde_json::Value = serde_json::from_str(body).map_err(|e| {
-        crate::PraxisError::agent_failure(author.as_str(), format!("invalid JSON response: {e}"))
+        crate::ProserpinaError::agent_failure(
+            author.as_str(),
+            format!("invalid JSON response: {e}"),
+        )
     })?;
 
     let content = parsed
@@ -323,7 +328,7 @@ pub fn parse_completion_response(
         .and_then(|m| m.get("content"))
         .and_then(|c| c.as_str())
         .ok_or_else(|| {
-            crate::PraxisError::agent_failure(
+            crate::ProserpinaError::agent_failure(
                 author.as_str(),
                 "response had no choices[0].message.content",
             )
@@ -392,7 +397,7 @@ impl HttpAgent {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(policy.timeout_secs))
             .build()
-            .expect("praxis: failed to build reqwest client for HttpAgent");
+            .expect("proserpina: failed to build reqwest client for HttpAgent");
         Self {
             id,
             persona,
@@ -400,7 +405,7 @@ impl HttpAgent {
             runtime: tokio::runtime::Builder::new_multi_thread()
                 .enable_all()
                 .build()
-                .expect("praxis: failed to build tokio runtime for HttpAgent"),
+                .expect("proserpina: failed to build tokio runtime for HttpAgent"),
             client,
             policy,
         }
@@ -414,7 +419,7 @@ impl HttpAgent {
 
     /// The async inner: render, POST (with retry/backoff), return the raw
     /// response body. Delegates to [`send_chat_completion`].
-    async fn fetch_response(&self, incoming: &Message) -> Result<String, crate::PraxisError> {
+    async fn fetch_response(&self, incoming: &Message) -> Result<String, crate::ProserpinaError> {
         let messages = render_prompt(&self.persona, incoming);
         let body = build_request_body(&self.config.model, &messages);
         let url = format!(
@@ -443,7 +448,7 @@ impl Agent for HttpAgent {
         &self.persona
     }
 
-    fn respond(&mut self, incoming: &Message) -> Result<Message, crate::PraxisError> {
+    fn respond(&mut self, incoming: &Message) -> Result<Message, crate::ProserpinaError> {
         // Bridge sync -> async: block on this agent's runtime.
         let body = self.runtime.block_on(self.fetch_response(incoming))?;
         let kind = expected_reply_kind(incoming.kind());

@@ -3,9 +3,9 @@
 
 //! The summarizer: structures a critique transcript into rich [`Finding`]s.
 //!
-//! After a run, Praxis makes a second LLM call (the *summarizer*) over the
+//! After a run, Proserpina makes a second LLM call (the *summarizer*) over the
 //! whole transcript + subject, asking the model to group the critiques into
-//! distinct issues and emit each as a fenced ` ```praxis-finding ` block. This
+//! distinct issues and emit each as a fenced ` ```proserpina-finding ` block. This
 //! module renders that prompt and parses the response.
 //!
 //! ## Graceful degradation
@@ -17,18 +17,18 @@
 
 use crate::agent::AgentId;
 use crate::backend::http::HttpConfig;
-use crate::error::PraxisError;
+use crate::error::ProserpinaError;
 use crate::message::MessageKind;
 use crate::report::{Finding, Severity};
 use crate::subject::Subject;
 use crate::transcript::Transcript;
 
 /// The fenced-block tag the summarizer emits for each finding.
-pub(crate) const FINDING_BLOCK_TAG: &str = "praxis-finding";
+pub(crate) const FINDING_BLOCK_TAG: &str = "proserpina-finding";
 
 /// Parses a summarizer response body into [`Finding`]s.
 ///
-/// Extracts every ` ```praxis-finding ` fenced block and parses its
+/// Extracts every ` ```proserpina-finding ` fenced block and parses its
 /// `key: value` lines into a `Finding`. Graceful degradation:
 /// - Unrecognized `severity` → `Major`.
 /// - Missing optional fields → `None` / empty.
@@ -38,8 +38,8 @@ pub(crate) const FINDING_BLOCK_TAG: &str = "praxis-finding";
 /// # Examples
 ///
 /// ```
-/// use praxis::summary::parse_findings;
-/// let body = "```praxis-finding\nseverity: major\nsummary: X.\n```";
+/// use proserpina::summary::parse_findings;
+/// let body = "```proserpina-finding\nseverity: major\nsummary: X.\n```";
 /// let findings = parse_findings(body);
 /// assert_eq!(findings.len(), 1);
 /// ```
@@ -53,7 +53,7 @@ pub fn parse_findings(body: &str) -> Vec<Finding> {
     findings
 }
 
-/// Extracts the inner text of each ` ```praxis-finding ` fenced block.
+/// Extracts the inner text of each ` ```proserpina-finding ` fenced block.
 fn extract_finding_blocks(body: &str) -> Vec<String> {
     let open = format!("```{FINDING_BLOCK_TAG}");
     let mut blocks = Vec::new();
@@ -132,12 +132,12 @@ fn parse_severity(value: &str) -> Severity {
 /// Renders the summarizer's system/user prompt from a subject + transcript.
 ///
 /// The system message instructs the model to group critiques into distinct
-/// issues and emit a fenced `praxis-finding` block per issue. The user message
+/// issues and emit a fenced `proserpina-finding` block per issue. The user message
 /// carries the subject text and the transcript turns.
 pub fn render_summary_prompt(subject: &Subject, transcript: &Transcript) -> Vec<SummaryMessage> {
     let system = "You are summarizing a multi-critic peer review. Group the \
 critiques into distinct issues. Emit ONE fenced code block per issue, tagged \
-```praxis-finding```, with these fields (one per line, `key: value`):\n\
+```proserpina-finding```, with these fields (one per line, `key: value`):\n\
 severity: (info|minor|major|blocker)\n\
 category: (a short label)\n\
 summary: (the issue, one line)\n\
@@ -201,14 +201,14 @@ pub struct SummaryMessage {
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::SummaryFailed`] if the HTTP request fails or the
+/// Returns [`ProserpinaError::SummaryFailed`] if the HTTP request fails or the
 /// response body cannot be read.
 pub fn summarize(
     subject: &Subject,
     transcript: &Transcript,
     config: &HttpConfig,
     policy: &crate::backend::http::RetryPolicy,
-) -> Result<Vec<Finding>, PraxisError> {
+) -> Result<Vec<Finding>, ProserpinaError> {
     use crate::backend::http::send_chat_completion;
 
     let messages = render_summary_prompt(subject, transcript);
@@ -221,12 +221,12 @@ pub fn summarize(
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .map_err(|e| PraxisError::summary_failed(format!("runtime build: {e}")))?;
+        .map_err(|e| ProserpinaError::summary_failed(format!("runtime build: {e}")))?;
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(policy.timeout_secs))
         .build()
-        .map_err(|e| PraxisError::summary_failed(format!("client build: {e}")))?;
+        .map_err(|e| ProserpinaError::summary_failed(format!("client build: {e}")))?;
 
     // Reuse the shared retry/backoff helper, mapping its AgentFailure into
     // SummaryFailed so summarizer failures keep exit code 12.
@@ -239,18 +239,20 @@ pub fn summarize(
             policy,
             &format!("summarizer ({})", config.model),
         ))
-        .map_err(|e| PraxisError::summary_failed(e.to_string()))?;
+        .map_err(|e| ProserpinaError::summary_failed(e.to_string()))?;
 
     // Extract choices[0].message.content (same shape as the HTTP backend).
     let parsed: serde_json::Value = serde_json::from_str(&body_text)
-        .map_err(|e| PraxisError::summary_failed(format!("invalid JSON: {e}")))?;
+        .map_err(|e| ProserpinaError::summary_failed(format!("invalid JSON: {e}")))?;
     let content = parsed
         .get("choices")
         .and_then(|c| c.get(0))
         .and_then(|c| c.get("message"))
         .and_then(|m| m.get("content"))
         .and_then(|c| c.as_str())
-        .ok_or_else(|| PraxisError::summary_failed("response had no choices[0].message.content"))?;
+        .ok_or_else(|| {
+            ProserpinaError::summary_failed("response had no choices[0].message.content")
+        })?;
 
     Ok(parse_findings(content))
 }

@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Industrial Algebra
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//! The `praxis critique` subcommand and its library entry points.
+//! The `proserpina critique` subcommand and its library entry points.
 //!
 //! Two entry points:
 //! - [`run_critique_echo`] — the offline, deterministic echo-backed path.
@@ -14,7 +14,7 @@
 
 use crate::agent::AgentId;
 use crate::backend::EchoAgent;
-use crate::error::PraxisError;
+use crate::error::ProserpinaError;
 use crate::graph::{InteractionGraph, Topology};
 use crate::persona::Persona;
 use crate::report::Report;
@@ -36,8 +36,8 @@ pub fn default_personas() -> Vec<Persona> {
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError`] if the run fails (the echo backend never does).
-pub fn run_critique_echo(input: &str, source: &str) -> Result<String, PraxisError> {
+/// Returns [`ProserpinaError`] if the run fails (the echo backend never does).
+pub fn run_critique_echo(input: &str, source: &str) -> Result<String, ProserpinaError> {
     let personas = default_personas();
     // Echo agents use the persona name as their AgentId.
     let critic_ids: Vec<AgentId> = personas.iter().map(|p| AgentId::new(p.name())).collect();
@@ -66,8 +66,8 @@ pub fn run_critique_echo(input: &str, source: &str) -> Result<String, PraxisErro
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::NoAuthedProviders`] when no provider key is set in
-/// the environment. Returns [`PraxisError::AgentFailure`] if a provider fails
+/// Returns [`ProserpinaError::NoAuthedProviders`] when no provider key is set in
+/// the environment. Returns [`ProserpinaError::AgentFailure`] if a provider fails
 /// to respond.
 #[cfg(all(feature = "cli", feature = "backend-http"))]
 pub fn run_critique(
@@ -78,7 +78,7 @@ pub fn run_critique(
     json: bool,
     panel: Option<&str>,
     policy: crate::backend::http::RetryPolicy,
-) -> Result<String, PraxisError> {
+) -> Result<String, ProserpinaError> {
     use crate::backend::credentials::{authed_configs_with, Credentials};
     use crate::backend::http::HttpAgent;
     use crate::backend::roster::{random_roster, Provider};
@@ -90,7 +90,7 @@ pub fn run_critique(
     let personas = resolve_panel(panel.unwrap_or("default"), &credentials)?;
     let configs = authed_configs_with(config_path)?;
     if configs.is_empty() {
-        return Err(PraxisError::no_authed_providers(
+        return Err(ProserpinaError::no_authed_providers(
             Provider::registry()
                 .iter()
                 .map(|p| p.name().to_owned())
@@ -141,12 +141,12 @@ pub fn run_critique(
 }
 
 /// Resolves the roster for a critique and emits a [`Plan`] without making any
-/// API calls (`praxis critique --dry-run`). Lets an agent verify intent before
+/// API calls (`proserpina critique --dry-run`). Lets an agent verify intent before
 /// spending tokens.
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::NoAuthedProviders`] when no provider key is set
+/// Returns [`ProserpinaError::NoAuthedProviders`] when no provider key is set
 /// (same as a real run).
 #[cfg(all(feature = "cli", feature = "backend-http"))]
 pub fn plan_critique(
@@ -156,7 +156,7 @@ pub fn plan_critique(
     config_path: Option<&std::path::Path>,
     _json: bool,
     panel: Option<&str>,
-) -> Result<String, PraxisError> {
+) -> Result<String, ProserpinaError> {
     use crate::agent_info::Plan;
     use crate::backend::credentials::{authed_configs_with, Credentials};
     use crate::backend::roster::Provider;
@@ -165,7 +165,7 @@ pub fn plan_critique(
     let credentials = Credentials::discover_or(config_path)?;
     let configs = authed_configs_with(config_path)?;
     if configs.is_empty() {
-        return Err(PraxisError::no_authed_providers(
+        return Err(ProserpinaError::no_authed_providers(
             Provider::registry()
                 .iter()
                 .map(|p| p.name().to_owned())

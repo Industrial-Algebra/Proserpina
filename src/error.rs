@@ -1,22 +1,22 @@
 // Copyright (C) 2026 Industrial Algebra
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//! Error types for Praxis.
+//! Error types for Proserpina.
 //!
-//! Every fallible public operation returns [`Result<_, PraxisError>`]. Library
+//! Every fallible public operation returns [`Result<_, ProserpinaError>`]. Library
 //! code never panics; all failure modes flow through this enum.
 
 use thiserror::Error;
 
 use crate::agent::AgentId;
 
-/// The single error type for all of Praxis.
+/// The single error type for all of Proserpina.
 ///
 /// Variants are deliberately coarse at the scaffold stage and will gain
 /// structure (e.g. dedicated graph or report variants) as modules land. Each
 /// variant carries enough context to locate the failure.
 #[derive(Debug, Error)]
-pub enum PraxisError {
+pub enum ProserpinaError {
     /// An [`crate::agent::Agent`] backend failed to produce a response.
     ///
     /// `agent_id` names the offending agent; `detail` is a backend-supplied
@@ -87,14 +87,14 @@ pub enum PraxisError {
     },
 }
 
-impl PraxisError {
-    /// Convenience constructor for [`PraxisError::AgentFailure`].
+impl ProserpinaError {
+    /// Convenience constructor for [`ProserpinaError::AgentFailure`].
     ///
     /// # Examples
     ///
     /// ```
-    /// use praxis::PraxisError;
-    /// let err = PraxisError::agent_failure("claude-1", "rate limited");
+    /// use proserpina::ProserpinaError;
+    /// let err = ProserpinaError::agent_failure("claude-1", "rate limited");
     /// assert!(format!("{err}").contains("claude-1"));
     /// ```
     pub fn agent_failure(agent_id: impl Into<String>, detail: impl Into<String>) -> Self {
@@ -104,40 +104,40 @@ impl PraxisError {
         }
     }
 
-    /// Convenience constructor for [`PraxisError::MissingAgent`].
+    /// Convenience constructor for [`ProserpinaError::MissingAgent`].
     ///
     /// # Examples
     ///
     /// ```
-    /// use praxis::{AgentId, PraxisError};
-    /// let err = PraxisError::missing_agent(AgentId::new("ghost"));
+    /// use proserpina::{AgentId, ProserpinaError};
+    /// let err = ProserpinaError::missing_agent(AgentId::new("ghost"));
     /// assert!(format!("{err}").contains("ghost"));
     /// ```
     pub fn missing_agent(id: AgentId) -> Self {
         Self::MissingAgent(id)
     }
 
-    /// Convenience constructor for [`PraxisError::NoAuthedProviders`].
+    /// Convenience constructor for [`ProserpinaError::NoAuthedProviders`].
     ///
     /// # Examples
     ///
     /// ```
-    /// use praxis::PraxisError;
-    /// let err = PraxisError::no_authed_providers(vec!["deepseek".to_owned()]);
+    /// use proserpina::ProserpinaError;
+    /// let err = ProserpinaError::no_authed_providers(vec!["deepseek".to_owned()]);
     /// assert!(format!("{err}").contains("deepseek"));
     /// ```
     pub fn no_authed_providers(tried: Vec<String>) -> Self {
         Self::NoAuthedProviders(tried)
     }
 
-    /// Convenience constructor for [`PraxisError::SummaryFailed`].
+    /// Convenience constructor for [`ProserpinaError::SummaryFailed`].
     pub fn summary_failed(detail: impl Into<String>) -> Self {
         Self::SummaryFailed {
             detail: detail.into(),
         }
     }
 
-    /// Convenience constructor for [`PraxisError::MalformedCredentials`].
+    /// Convenience constructor for [`ProserpinaError::MalformedCredentials`].
     ///
     /// Accepts any error-like `detail` (the read/parse error's display).
     pub fn malformed_credentials(path: impl Into<String>, detail: impl std::fmt::Display) -> Self {
@@ -147,7 +147,7 @@ impl PraxisError {
         }
     }
 
-    /// Convenience constructor for [`PraxisError::IncompleteCustomProvider`].
+    /// Convenience constructor for [`ProserpinaError::IncompleteCustomProvider`].
     pub fn incomplete_custom_provider(name: impl Into<String>, missing: Vec<&'static str>) -> Self {
         Self::IncompleteCustomProvider {
             name: name.into(),
@@ -161,32 +161,32 @@ impl PraxisError {
     /// the error type without parsing the human message.
     pub fn error_kind(&self) -> &'static str {
         match self {
-            PraxisError::AgentFailure { .. } => "agent_failure",
-            PraxisError::MissingAgent(_) => "missing_agent",
-            PraxisError::NoAuthedProviders(_) => "no_authed_providers",
-            PraxisError::SummaryFailed { .. } => "summary_failed",
-            PraxisError::MalformedCredentials { .. } => "malformed_credentials",
-            PraxisError::IncompleteCustomProvider { .. } => "incomplete_custom_provider",
-            PraxisError::UnknownPanel { .. } => "unknown_panel",
+            ProserpinaError::AgentFailure { .. } => "agent_failure",
+            ProserpinaError::MissingAgent(_) => "missing_agent",
+            ProserpinaError::NoAuthedProviders(_) => "no_authed_providers",
+            ProserpinaError::SummaryFailed { .. } => "summary_failed",
+            ProserpinaError::MalformedCredentials { .. } => "malformed_credentials",
+            ProserpinaError::IncompleteCustomProvider { .. } => "incomplete_custom_provider",
+            ProserpinaError::UnknownPanel { .. } => "unknown_panel",
             #[cfg(feature = "keyring")]
-            PraxisError::KeyringAccess { .. } => "keyring_access",
+            ProserpinaError::KeyringAccess { .. } => "keyring_access",
         }
     }
 
     /// The exit code a CLI run should terminate with when this error occurs.
     ///
-    /// Matches the scheme reported by [`exit_codes_map`] / `praxis capabilities`.
+    /// Matches the scheme reported by [`exit_codes_map`] / `proserpina capabilities`.
     pub fn exit_code(&self) -> u8 {
         match self {
-            PraxisError::AgentFailure { .. } => 11,
-            PraxisError::MissingAgent(_) => 15,
-            PraxisError::NoAuthedProviders(_) => 10,
-            PraxisError::SummaryFailed { .. } => 12,
-            PraxisError::MalformedCredentials { .. } => 13,
-            PraxisError::IncompleteCustomProvider { .. } => 14,
-            PraxisError::UnknownPanel { .. } => 16,
+            ProserpinaError::AgentFailure { .. } => 11,
+            ProserpinaError::MissingAgent(_) => 15,
+            ProserpinaError::NoAuthedProviders(_) => 10,
+            ProserpinaError::SummaryFailed { .. } => 12,
+            ProserpinaError::MalformedCredentials { .. } => 13,
+            ProserpinaError::IncompleteCustomProvider { .. } => 14,
+            ProserpinaError::UnknownPanel { .. } => 16,
             #[cfg(feature = "keyring")]
-            PraxisError::KeyringAccess { .. } => 17,
+            ProserpinaError::KeyringAccess { .. } => 17,
         }
     }
 
@@ -212,38 +212,38 @@ impl PraxisError {
     #[cfg(feature = "json")]
     fn details_json(&self) -> serde_json::Value {
         match self {
-            PraxisError::AgentFailure { agent_id, detail } => serde_json::json!({
+            ProserpinaError::AgentFailure { agent_id, detail } => serde_json::json!({
                 "agent_id": agent_id,
                 "detail": detail,
             }),
-            PraxisError::MissingAgent(id) => serde_json::json!({ "agent_id": id.to_string() }),
-            PraxisError::NoAuthedProviders(tried) => serde_json::json!({
+            ProserpinaError::MissingAgent(id) => serde_json::json!({ "agent_id": id.to_string() }),
+            ProserpinaError::NoAuthedProviders(tried) => serde_json::json!({
                 "tried": tried,
             }),
-            PraxisError::SummaryFailed { detail } => serde_json::json!({
+            ProserpinaError::SummaryFailed { detail } => serde_json::json!({
                 "detail": detail,
             }),
-            PraxisError::MalformedCredentials { path, detail } => serde_json::json!({
+            ProserpinaError::MalformedCredentials { path, detail } => serde_json::json!({
                 "path": path,
                 "detail": detail,
             }),
-            PraxisError::IncompleteCustomProvider { name, missing } => serde_json::json!({
+            ProserpinaError::IncompleteCustomProvider { name, missing } => serde_json::json!({
                 "provider": name,
                 "missing": missing,
             }),
-            PraxisError::UnknownPanel { name, available } => serde_json::json!({
+            ProserpinaError::UnknownPanel { name, available } => serde_json::json!({
                 "name": name,
                 "available": available,
             }),
             #[cfg(feature = "keyring")]
-            PraxisError::KeyringAccess { name, detail } => serde_json::json!({
+            ProserpinaError::KeyringAccess { name, detail } => serde_json::json!({
                 "name": name,
                 "detail": detail,
             }),
         }
     }
 
-    /// Convenience constructor for [`PraxisError::UnknownPanel`].
+    /// Convenience constructor for [`ProserpinaError::UnknownPanel`].
     pub fn unknown_panel(name: impl Into<String>, available: Vec<String>) -> Self {
         Self::UnknownPanel {
             name: name.into(),
@@ -251,7 +251,7 @@ impl PraxisError {
         }
     }
 
-    /// Convenience constructor for [`PraxisError::KeyringAccess`] (keyring
+    /// Convenience constructor for [`ProserpinaError::KeyringAccess`] (keyring
     /// feature only).
     #[cfg(feature = "keyring")]
     pub fn keyring_access(name: impl Into<String>, detail: impl std::fmt::Display) -> Self {
@@ -262,10 +262,10 @@ impl PraxisError {
     }
 }
 
-/// The canonical Praxis exit-code scheme, as a sorted map (code -> meaning).
+/// The canonical Proserpina exit-code scheme, as a sorted map (code -> meaning).
 ///
-/// Single source of truth: [`PraxisError::exit_code`] returns values from
-/// this scheme, and `praxis capabilities` reports it so agents can learn it.
+/// Single source of truth: [`ProserpinaError::exit_code`] returns values from
+/// this scheme, and `proserpina capabilities` reports it so agents can learn it.
 ///
 /// May appear unused on builds without `backend-http` (Capabilities is then
 /// gated out); it remains the documented source of truth for the codes.

@@ -1,6 +1,6 @@
 # The Interaction Graph
 
-A Praxis run is modeled as a **directed graph of agent-to-agent message
+A Proserpina run is modeled as a **directed graph of agent-to-agent message
 passing**: nodes are agents (critics, a synthesizer) and edges are message
 routes. Topologies — `parallel`, `rounds` — are templates that produce a graph.
 

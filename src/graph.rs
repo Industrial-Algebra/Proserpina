@@ -3,7 +3,7 @@
 
 //! The interaction graph and its topology constructors.
 //!
-//! A Praxis run is modeled as a directed graph of agent-to-agent message
+//! A Proserpina run is modeled as a directed graph of agent-to-agent message
 //! passing: nodes are agents (critics, a moderator, a synthesizer) and edges
 //! are message routes. Topologies — `parallel`, `rounds`, `moderated` — are
 //! templates that produce a graph.
@@ -52,7 +52,7 @@ impl Topology {
     /// # Examples
     ///
     /// ```
-    /// use praxis::{AgentId, InteractionGraph, Topology};
+    /// use proserpina::{AgentId, InteractionGraph, Topology};
     ///
     /// let topology = Topology::parallel(vec![
     ///     AgentId::new("methodologist"),
@@ -71,7 +71,7 @@ impl Topology {
     /// # Examples
     ///
     /// ```
-    /// use praxis::{AgentId, InteractionGraph, Topology};
+    /// use proserpina::{AgentId, InteractionGraph, Topology};
     ///
     /// let topology = Topology::rounds(vec![AgentId::new("a"), AgentId::new("b")], 3);
     /// let graph: InteractionGraph = topology.into();
