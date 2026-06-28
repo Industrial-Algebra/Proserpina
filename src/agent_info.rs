@@ -3,13 +3,13 @@
 
 //! Agent-facing self-description: [`Capabilities`] and [`Plan`].
 //!
-//! These types back the `praxis capabilities` and `praxis critique --dry-run`
-//! commands, making Praxis discoverable to AI agents. They serialize to JSON
+//! These types back the `proserpina capabilities` and `proserpina critique --dry-run`
+//! commands, making Proserpina discoverable to AI agents. They serialize to JSON
 //! (the default for capabilities, since it's machine-facing).
 //!
 //! [`Capabilities`] reports dynamic auth state — which providers are currently
 //! authed in this environment — so an agent learns what it can actually do
-//! right now, not just what Praxis could do in theory.
+//! right now, not just what Proserpina could do in theory.
 
 use crate::backend::credentials::authed_configs_with;
 use crate::backend::roster::Provider;
@@ -25,7 +25,7 @@ pub struct ProviderInfo {
     pub authed: bool,
 }
 
-/// Praxis's self-description for AI agents.
+/// Proserpina's self-description for AI agents.
 ///
 /// Built via [`Capabilities::static_info`] (registry + static metadata) or
 /// [`Capabilities::with_current_auth`] (also resolves which providers are
@@ -115,7 +115,7 @@ impl Capabilities {
     }
 }
 
-/// A resolved plan for a run, emitted by `praxis critique --dry-run`.
+/// A resolved plan for a run, emitted by `proserpina critique --dry-run`.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct Plan {
     /// The seed that will be (or was) used.

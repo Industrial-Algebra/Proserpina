@@ -1,13 +1,13 @@
-# Praxis — Design Document
+# Proserpina — Design Document
 
 - **Date:** 2026-06-19
 - **Status:** Approved (scaffold phase complete; implementation via TDD)
-- **Project:** Praxis — Multi-Agent Critique & Cross-Examination Pipeline
-- **Crate:** standalone, `praxis`, edition 2021, AGPL-3.0-only
+- **Project:** Proserpina — Multi-Agent Critique & Cross-Examination Pipeline
+- **Crate:** standalone, `proserpina`, edition 2021, AGPL-3.0-only
 
 ## 1. Purpose
 
-Praxis is a Rust crate and CLI that runs **multi-agent critique and
+Proserpina is a Rust crate and CLI that runs **multi-agent critique and
 cross-examination** over Industrial Algebra documents — pre-prints, roadmaps,
 plans, and specs — anything that benefits from intellectual rigor before it
 ships.
@@ -31,7 +31,7 @@ testable with zero LLM dependencies.
    dialectic) are pre-built topology templates over the same graph core — not
    special cases. Composability and generality over privileged topologies.
 
-3. **First vertical slice is a thin CLI.** `praxis critique <file> -o <report.md>`
+3. **First vertical slice is a thin CLI.** `proserpina critique <file> -o <report.md>`
    exercises the graph core, one backend (echo), one topology (parallel
    fan-out), and a markdown report renderer end-to-end. Round-based/moderated
    topologies and real LLM backends arrive in later PRs.
@@ -48,7 +48,7 @@ operates on whichever units are present (whole document, claims, or sections).
 pub trait Agent {
     fn id(&self) -> &AgentId;
     fn persona(&self) -> &Persona;
-    fn respond(&mut self, msg: &Message) -> Result<Response, PraxisError>;
+    fn respond(&mut self, msg: &Message) -> Result<Response, ProserpinaError>;
 }
 ```
 Every backend (echo, CLI subprocess, HTTP API, MCP) implements `Agent`.
@@ -112,8 +112,8 @@ Standalone crate (Schubert pattern), edition 2021, `AGPL-3.0-only`,
 ```
 src/
 ├── lib.rs            # crate docs, feature surface, re-exports
-├── main.rs           # `praxis` binary
-├── error.rs          # PraxisError (thiserror)
+├── main.rs           # `proserpina` binary
+├── error.rs          # ProserpinaError (thiserror)
 ├── subject.rs        # Subject
 ├── agent.rs          # Agent trait, AgentId
 ├── persona.rs        # Persona, built-in registry
@@ -127,7 +127,7 @@ src/
 ├── report.rs         # markdown rendering
 └── cli/
     ├── mod.rs
-    └── critique.rs   # `praxis critique` subcommand
+    └── critique.rs   # `proserpina critique` subcommand
 ```
 
 ## 6. Implementation Sequencing
@@ -142,7 +142,7 @@ refactor. Every public item documented with `# Examples` / `# Errors`.
 3. **Graph + parallel topology + runner** — `graph`, `runner`, `transcript`;
    `Topology::parallel` end-to-end against `EchoAgent`.
 4. **Report + CLI vertical slice** — `report` (markdown), `cli`/`main.rs`;
-   `praxis critique <file> -o <report.md>` works with the echo backend.
+   `proserpina critique <file> -o <report.md>` works with the echo backend.
 5. **Round-based topology** — `Topology::rounds`; real cross-examination flows.
 6. **Real LLM backend(s)** — pick the first concrete provider (CLI subprocess,
    HTTP API, or MCP) based on what the echo-driven core has taught us.

@@ -21,7 +21,7 @@ pub fn roster_from_env(
     personas: &[Persona],
     providers: &[Provider],
     seed: u64,
-) -> Result<Vec<(Persona, HttpConfig)>, PraxisError>;
+) -> Result<Vec<(Persona, HttpConfig)>, ProserpinaError>;
 ```
 
 `Provider` is a preset (data, like `Persona`) for an OpenAI-compatible

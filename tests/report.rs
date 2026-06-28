@@ -3,7 +3,7 @@
 
 //! Integration tests for the report synthesizer and markdown rendering.
 
-use praxis::{
+use proserpina::{
     AgentId, EchoAgent, InteractionGraph, Message, MessageKind, Persona, Report, Runner, Severity,
     Subject, Topology, Transcript,
 };
@@ -103,7 +103,7 @@ fn report_from_manual_transcript_skips_non_critiques() {
 
 #[test]
 fn report_renders_to_markdown_with_title_and_per_finding_blocks() {
-    use praxis::Finding;
+    use proserpina::Finding;
 
     let mut report = Report::new();
     report.push_finding(

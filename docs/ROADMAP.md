@@ -1,4 +1,4 @@
-# Praxis — Directions
+# Proserpina — Directions
 
 > **v0.1.0 Snapshot** — The core pipeline is complete and usable: parallel +
 > rounds topologies, HTTP backend, multi-provider roster, credentials config,
@@ -14,7 +14,7 @@
 
 ## Current State
 
-Praxis is a provider-agnostic multi-agent critique pipeline. It is synchronous,
+Proserpina is a provider-agnostic multi-agent critique pipeline. It is synchronous,
 testable end-to-end via the echo backend (zero LLM deps), and reaches six
 frontier providers (DeepSeek, Z.ai GLM, OpenAI, Moonshot, Alibaba, Google) plus
 any custom OpenAI-compatible endpoint. 136 tests, zero warnings across all
@@ -73,14 +73,14 @@ is committed to a version.
   workaround more loudly).
 - **Credentials file permissions check** — warn if world-readable.
 - **Ollama as a first-class preset** — common local-LLM case.
-- **`praxis auth` CLI flow** — interactive `praxis auth set <provider>` that
+- **`proserpina auth` CLI flow** — interactive `proserpina auth set <provider>` that
   writes the keychain, so users don't have to use a separate tool.
 
 ---
 
 ## Explicitly Deferred / Out of Scope for v0.1.x
 
-- **MCP server mode.** Praxis is a CLI (the lightest, most universal
+- **MCP server mode.** Proserpina is a CLI (the lightest, most universal
   agent-callable form). An MCP server would couple it to MCP-aware clients and
   turn it into a long-running process; revisit if there's demand.
 - **Async engine.** The sync/async bridge (block-on-runtime per `HttpAgent`)
@@ -95,7 +95,7 @@ is committed to a version.
 ## Research Questions
 
 - **Severity calibration.** Different summarizer models calibrate severity
-  differently. Does Praxis need a rubric, or per-model calibration?
+  differently. Does Proserpina need a rubric, or per-model calibration?
 - **Diversity measurement.** How do we *measure* whether a panel's diversity
   actually improved the critique, vs. a homogeneous panel? Open empirical
   question.

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Praxis are documented here. The format is based on
+All notable changes to Proserpina are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -19,7 +19,7 @@ agent-discoverability, configurable persona panels, and retry/timeout/backoff.
   **`Message`**/**`MessageKind`** (Critique/Rebuttal/Question/Concession/Verdict/Prompt).
 - **`Subject`** (the document under critique), **`Transcript`** (ordered messages),
   **`Runner`** owning a `HashMap<AgentId, Box<dyn Agent>>` registry.
-- **`Severity`** (Info/Minor/Major/Blocker), exhaustive thiserror-based `PraxisError`.
+- **`Severity`** (Info/Minor/Major/Blocker), exhaustive thiserror-based `ProserpinaError`.
 
 ### Added — Backends
 
@@ -34,7 +34,7 @@ agent-discoverability, configurable persona panels, and retry/timeout/backoff.
 - **`Provider` registry** of six frontier presets + **`random_roster`** (pure,
   seeded) assigning authed providers to critic personas for diverse-model
   cross-examination. **`roster_from_env`** + `NoAuthedProviders` error.
-- **Standalone credentials config** (`~/.config/praxis/credentials.toml`):
+- **Standalone credentials config** (`~/.config/proserpina/credentials.toml`):
   provider keys, model/base_url overrides, **custom providers** (Ollama/proxies),
   and `[panels.NAME]` sections. Resolution precedence env > config > registry.
 - **Z.ai coding-plan gateway** (`api.z.ai/api/coding/paas/v4`) so Z.ai works
@@ -51,12 +51,12 @@ agent-discoverability, configurable persona panels, and retry/timeout/backoff.
 
 ### Added — Agent integration
 
-- **`praxis capabilities`**: JSON self-description with **dynamic auth state**
+- **`proserpina capabilities`**: JSON self-description with **dynamic auth state**
   (which providers are authed right now), available panels, and the exit-code
   scheme.
-- **`praxis critique --dry-run`**: emits a run plan (roster, call counts) with
+- **`proserpina critique --dry-run`**: emits a run plan (roster, call counts) with
   zero API calls.
-- **Structured error JSON** on stderr (when `--json`) + **Praxis-specific exit
+- **Structured error JSON** on stderr (when `--json`) + **Proserpina-specific exit
   codes** (10–16, 70).
 - **Provider attribution** in errors (`agent "Devil's Advocate" (glm-5.2)
   failed`), so multi-provider runs can tell which provider died.
@@ -66,7 +66,7 @@ agent-discoverability, configurable persona panels, and retry/timeout/backoff.
 - **Configurable persona panels**: built-in `default`/`duo`/`panel` (1/2/5
   archetypes — Devil's Advocate, Methodologist, Red Team, Domain Expert, Editor)
   plus user-defined `[panels.NAME]` sections. `--panel <name>` flag;
-  `praxis capabilities` lists available panels.
+  `proserpina capabilities` lists available panels.
 
 ### Added — Reliability
 
@@ -79,15 +79,15 @@ agent-discoverability, configurable persona panels, and retry/timeout/backoff.
 
 - **OS keychain credential tier** (`keyring` feature): highest-precedence
   key source (keyring > env > config > registry), looked up as
-  `praxis:<KEY_ENV_VAR>`. Works on macOS Keychain and Windows Credential
+  `proserpina:<KEY_ENV_VAR>`. Works on macOS Keychain and Windows Credential
   Manager; Linux gnome-keyring has a known limitation (use env/config).
-  `PraxisError::KeyringAccess` (exit 17).
+  `ProserpinaError::KeyringAccess` (exit 17).
 
 ### Tooling
 
-- `praxis` binary behind the `cli` feature; examples (`deepseek_smoke.rs`);
+- `proserpina` binary behind the `cli` feature; examples (`deepseek_smoke.rs`);
 - 136 tests across 13 integration-test files; fmt + clippy `-D warnings` clean
   on default and all-features.
 - CI workflow, this changelog, contributing guide, and mdbook documentation.
 
-[0.1.0]: https://github.com/Industrial-Algebra/Praxis/releases/tag/v0.1.0
+[0.1.0]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.1.0

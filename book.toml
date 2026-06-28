@@ -1,5 +1,5 @@
 [book]
-title = "Praxis"
+title = "Proserpina"
 description = "Multi-agent critique and cross-examination pipeline — Industrial Algebra"
 authors = ["Industrial Algebra"]
 language = "en"
@@ -12,4 +12,4 @@ build-dir = "book/book"
 additional-css = ["book/theme/custom.css"]
 default-theme = "navy"
 preferred-dark-theme = "navy"
-git-repository-url = "https://github.com/Industrial-Algebra/Praxis"
+git-repository-url = "https://github.com/Industrial-Algebra/Proserpina"

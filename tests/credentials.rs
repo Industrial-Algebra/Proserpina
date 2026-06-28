@@ -12,9 +12,9 @@
 
 use std::collections::HashMap;
 
-use praxis::backend::credentials::{authed_configs, resolve_configs, Credentials};
-use praxis::backend::http::HttpConfig;
-use praxis::backend::roster::Provider;
+use proserpina::backend::credentials::{authed_configs, resolve_configs, Credentials};
+use proserpina::backend::http::HttpConfig;
+use proserpina::backend::roster::Provider;
 
 #[test]
 fn credentials_parse_a_minimal_single_provider() {
@@ -111,7 +111,7 @@ model = "glm-5.2"
 
 #[test]
 fn from_path_errors_on_a_nonexistent_path() {
-    let path = std::path::PathBuf::from("/nonexistent/praxis/credentials.toml");
+    let path = std::path::PathBuf::from("/nonexistent/proserpina/credentials.toml");
     assert!(Credentials::from_path(&path).is_err());
 }
 
@@ -287,9 +287,12 @@ fn authed_configs_uses_resolve_over_real_registry_and_env() {
         std::env::remove_var(var);
     }
     // Point discovery at a nonexistent file so no real config interferes.
-    std::env::set_var("PRAXIS_CONFIG", "/nonexistent/praxis-test-credentials.toml");
+    std::env::set_var(
+        "PROSERPINA_CONFIG",
+        "/nonexistent/proserpina-test-credentials.toml",
+    );
     let configs = authed_configs().expect("empty is not an error");
-    std::env::remove_var("PRAXIS_CONFIG");
+    std::env::remove_var("PROSERPINA_CONFIG");
     assert!(
         configs.is_empty(),
         "no keys + no config -> no authed configs"

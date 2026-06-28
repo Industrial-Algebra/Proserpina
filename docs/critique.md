@@ -1,6 +1,6 @@
-# Critique of the Praxis v0.1.0 Release
+# Critique of the Proserpina v0.1.0 Release
 
-> **v0.1.0 Snapshot** — This is an honest self-assessment of Praxis at its
+> **v0.1.0 Snapshot** — This is an honest self-assessment of Proserpina at its
 > initial public release. It records the project's weak points and open
 > questions as of v0.1.0, kept public as a benchmark for future improvement.
 > Several items below have known follow-ups tracked in
@@ -8,7 +8,7 @@
 
 ## Overview
 
-Praxis is a Rust CLI + library that runs a panel of LLM-backed critic personas
+Proserpina is a Rust CLI + library that runs a panel of LLM-backed critic personas
 over a document and summarizes their critiques into actionable findings. The
 architecture is clean (provider-agnostic `Agent` trait; pure roster/panel
 resolution; sync engine with a contained sync/async bridge), the test suite is
@@ -21,9 +21,9 @@ surface is genuinely good. The honest weaknesses are below.
 
 1. **Single-critic default; multi-critic is opt-in.**
    The `default` panel is a single Devil's Advocate. The roster's
-   multi-provider diversity value — Praxis's headline feature — is only
+   multi-provider diversity value — Proserpina's headline feature — is only
    realized when the user reaches for `--panel duo` or `--panel panel`. New
-   users running `praxis critique doc.md` with defaults get a competent but
+   users running `proserpina critique doc.md` with defaults get a competent but
    *single-model* critique and may not realize what they're missing. The
    quick-start docs surface `--panel panel` early, but the default itself
    under-sells the tool.
@@ -34,15 +34,15 @@ surface is genuinely good. The honest weaknesses are below.
    it's opt-in (not in the default install), and on Linux with gnome-keyring
    the `keyring` crate's backend has a write-Ok/read-NoEntry quirk that makes
    it unreliable. So the *default* install path still stores keys in plaintext
-   (`~/.config/praxis/credentials.toml`) with no permissions check. Real
+   (`~/.config/proserpina/credentials.toml`) with no permissions check. Real
    improvement over a pure-plaintext world, but not a complete fix — tracked
    in ROADMAP.
 
 3. **Cost is invisible until it's incurred.**
-   `--dry-run` shows call counts, but Praxis doesn't estimate USD cost, and
+   `--dry-run` shows call counts, but Proserpina doesn't estimate USD cost, and
    there's no spend guard. A `--panel panel` run with retry is 6+ frontier
    calls; a user who fat-fingers `--max-attempts 10` could spend more than
-   intended. Providers' billing is the backstop, but Praxis could do better.
+   intended. Providers' billing is the backstop, but Proserpina could do better.
 
 4. **Summarizer is a single point of failure and a single model.**
    The summarizer uses one authed config (`configs[0]`). If that provider is
@@ -60,16 +60,16 @@ surface is genuinely good. The honest weaknesses are below.
 
 6. **No defense against prompt injection.**
    A document containing "ignore previous instructions…" is passed verbatim
-   into the prompt. Praxis explicitly does not defend against this (it's an
+   into the prompt. Proserpina explicitly does not defend against this (it's an
    open problem in LLM tooling), but users critiquing adversarial documents
    may not realize their critique can be manipulated by the document itself.
    Documented in [Security Considerations](../book/src/security/considerations.md).
 
 7. **Feature-gate ergonomics.**
-   `cargo install praxis` installs default features only (`std`), which falls
+   `cargo install proserpina` installs default features only (`std`), which falls
    back to the echo backend with a notice. Real use needs
    `--features cli,backend-http,json`. This is documented but easy to miss;
-   the "installed Praxis and it just echoes my doc" failure mode is real.
+   the "installed Proserpina and it just echoes my doc" failure mode is real.
 
 8. **No benchmarks or cost/latency characterization.**
    The docs claim sensible retry/timeout defaults but there's no data on
@@ -98,7 +98,7 @@ surface is genuinely good. The honest weaknesses are below.
   resolution, and the sync/async bridge are clean and well-tested. Adding a
   new backend or topology is a contained change.
 - **Agent-discoverability.** `capabilities` with dynamic auth state, `--dry-run`,
-  structured error JSON, and documented exit codes make Praxis genuinely
+  structured error JSON, and documented exit codes make Proserpina genuinely
   callable on the fly by AI agents — better than most CLIs.
 - **Determinism where it matters.** Echo backend for tests; seeded roster for
   reproducible runs; graceful degradation so a run never hard-fails on a
@@ -111,7 +111,7 @@ surface is genuinely good. The honest weaknesses are below.
 
 ## Verdict
 
-Praxis v0.1.0 is a solid, well-architected foundation that delivers on its core
+Proserpina v0.1.0 is a solid, well-architected foundation that delivers on its core
 promise (diverse multi-critic critique with actionable findings) but has honest
 gaps in security defaults (plaintext keys), cost guardrails, model-string
 maintenance, and validation. The weaknesses are tractable and tracked; none is

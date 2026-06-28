@@ -1,7 +1,7 @@
 # API Reference
 
-Praxis's public API, grouped by concern. All items are documented at the
-[rustdoc](https://docs.rs/praxis) level; this section is a navigable map of
+Proserpina's public API, grouped by concern. All items are documented at the
+[rustdoc](https://docs.rs/proserpina) level; this section is a navigable map of
 the surface.
 
 - [The provider boundary: `Agent`, `AgentId`](./agent.md)
@@ -16,4 +16,4 @@ the surface.
 - [Credentials config: `Credentials`, `resolve_configs`](./credentials.md)
 - [The summarizer: `summarize`, `parse_findings`](./summarizer.md)
 - [Agent integration: `Capabilities`, `Plan`, exit codes](./agent-info.md)
-- [Errors: `PraxisError`](./errors.md)
+- [Errors: `ProserpinaError`](./errors.md)

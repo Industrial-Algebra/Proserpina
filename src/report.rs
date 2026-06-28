@@ -65,7 +65,7 @@ impl Finding {
     /// # Examples
     ///
     /// ```
-    /// use praxis::{Finding, Severity};
+    /// use proserpina::{Finding, Severity};
     /// let f = Finding::new(Severity::Major, "Unsupported assumption.");
     /// assert_eq!(f.summary(), "Unsupported assumption.");
     /// ```

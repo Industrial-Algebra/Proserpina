@@ -36,7 +36,7 @@ impl Provider {
     /// # Examples
     ///
     /// ```
-    /// use praxis::backend::roster::Provider;
+    /// use proserpina::backend::roster::Provider;
     /// let p = Provider::new("deepseek")
     ///     .with_base_url("https://api.deepseek.com/v1")
     ///     .with_model("deepseek-chat")
@@ -101,11 +101,11 @@ impl Provider {
     /// # Examples
     ///
     /// ```
-    /// use praxis::backend::roster::Provider;
+    /// use proserpina::backend::roster::Provider;
     /// let p = Provider::new("test")
     ///     .with_base_url("https://example.invalid/v1")
     ///     .with_model("m")
-    ///     .with_key_env_var("PRAXIS_DOC_EXAMPLE_UNSET");
+    ///     .with_key_env_var("PROSERPINA_DOC_EXAMPLE_UNSET");
     /// // Key unset -> None.
     /// assert!(p.config_from_env().is_none());
     /// ```
@@ -175,9 +175,9 @@ impl Provider {
 /// # Examples
 ///
 /// ```
-/// use praxis::backend::http::HttpConfig;
-/// use praxis::backend::roster::random_roster;
-/// use praxis::Persona;
+/// use proserpina::backend::http::HttpConfig;
+/// use proserpina::backend::roster::random_roster;
+/// use proserpina::Persona;
 /// use rand::SeedableRng;
 /// use rand::rngs::StdRng;
 ///
@@ -217,13 +217,13 @@ pub fn random_roster(
 ///
 /// # Errors
 ///
-/// Returns [`crate::PraxisError::NoAuthedProviders`] when none of `providers`
+/// Returns [`crate::ProserpinaError::NoAuthedProviders`] when none of `providers`
 /// have their key env var set.
 pub fn roster_from_env(
     personas: &[Persona],
     providers: &[Provider],
     seed: u64,
-) -> Result<Vec<(Persona, HttpConfig)>, crate::PraxisError> {
+) -> Result<Vec<(Persona, HttpConfig)>, crate::ProserpinaError> {
     use rand::SeedableRng;
 
     let configs: Vec<HttpConfig> = providers
@@ -232,7 +232,7 @@ pub fn roster_from_env(
         .collect();
 
     if configs.is_empty() {
-        return Err(crate::PraxisError::no_authed_providers(
+        return Err(crate::ProserpinaError::no_authed_providers(
             providers.iter().map(|p| p.name().to_owned()).collect(),
         ));
     }

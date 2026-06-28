@@ -1,4 +1,4 @@
-# Praxis — v0.1.0 Release Prep
+# Proserpina — v0.1.0 Release Prep
 
 - **Date:** 2026-06-23
 - **Status:** In progress
@@ -9,21 +9,21 @@
 ## 1. Scope (decided)
 
 Per Justin: **public repo + crates.io + book + netlify + publish/docs CI.**
-Maximizes the deploy-everywhere / agent-callable value (`cargo install praxis`,
-public docs agents can read). `praxis` crate name confirmed available on
+Maximizes the deploy-everywhere / agent-callable value (`cargo install proserpina`,
+public docs agents can read). `proserpina` crate name confirmed available on
 crates.io.
 
 ## 2. Deliverables
 
 ### A. README rewrite (High)
 Replace the scaffold README with a real one matching Schubert's structure:
-- Tagline + one-paragraph "what is Praxis"
+- Tagline + one-paragraph "what is Proserpina"
 - **Why multi-agent critique?** (the diversity argument)
 - **How it works** (graph engine, roster, summarizer — high level)
-- **Quick start** (`cargo install praxis`, set a key, `praxis critique doc.md`)
+- **Quick start** (`cargo install proserpina`, set a key, `proserpina critique doc.md`)
 - **Configuration** (credentials.toml: providers, panels, retry)
 - **Panels** (built-in default/duo/panel, custom `[panels.NAME]`)
-- **Agent integration** (`praxis capabilities`, `--dry-run`, `--json`,
+- **Agent integration** (`proserpina capabilities`, `--dry-run`, `--json`,
   exit codes)
 - **Examples** (a sample run output)
 - **Features** table
@@ -36,12 +36,12 @@ the 13 PRs as user-facing features.
 
 ### C. CI workflow `.github/workflows/ci.yml` (High)
 Mirrors Schubert's: fmt / clippy (`--all-targets --all-features -- -D warnings`)
-/ test (default + all-features) / doc, on push/PR to develop+main. Praxis has
+/ test (default + all-features) / doc, on push/PR to develop+main. Proserpina has
 no sibling-crate checkouts (unlike Schubert's amari/karpal deps, which are
 crates.io-published), so it's simpler.
 
 ### D. CONTRIBUTING.md (Medium)
-IA CLA boilerplate + Praxis-specific: IA gitflow (feature→develop→main),
+IA CLA boilerplate + Proserpina-specific: IA gitflow (feature→develop→main),
 TDD expectation, the four CI gates, clippy `-D warnings`, AGPL headers.
 
 ### E. mdbook `book/` + `book.toml` + `netlify.toml` (Medium)
@@ -59,9 +59,9 @@ Add 2–3 examples beyond `deepseek_smoke.rs`: a multi-critic `panel_smoke.rs`,
 a credentials-config example, maybe a library-usage example.
 
 ### H. Repo public flip + crates.io publish (the release action itself)
-- `gh repo edit Industrial-Algebra/Praxis --visibility public`
+- `gh repo edit Industrial-Algebra/Proserpina --visibility public`
 - Tag `v0.1.0` on main, push → publish workflow fires.
-- Verify `cargo install praxis` works.
+- Verify `cargo install proserpina` works.
 
 ## 3. Sequencing
 

@@ -19,15 +19,15 @@ impl Plan {
 
 These types back the agent-discoverability surface:
 
-- `praxis capabilities` emits `Capabilities::with_current_auth()` as JSON. The
+- `proserpina capabilities` emits `Capabilities::with_current_auth()` as JSON. The
   `providers[].authed` field is **dynamic** — it reflects the real config +
   env, so an agent learns what's runnable *in this environment*.
-- `praxis critique --dry-run` emits a `Plan` — the resolved roster + call
+- `proserpina critique --dry-run` emits a `Plan` — the resolved roster + call
   counts, with **zero API calls**.
 
 ## Exit codes
 
-`PraxisError::exit_code()` returns the scheme reported in `capabilities`:
+`ProserpinaError::exit_code()` returns the scheme reported in `capabilities`:
 `0` success, `2` usage, `10` no authed providers, `11` agent failure,
 `12` summary failed, `13` malformed credentials, `14` incomplete custom
 provider, `15` missing agent, `16` unknown panel, `70` other.

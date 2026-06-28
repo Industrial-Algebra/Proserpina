@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Industrial Algebra
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//! The `praxis` binary: cross-examines a document and writes a critique report.
+//! The `proserpina` binary: cross-examines a document and writes a critique report.
 
 #![cfg(feature = "cli")]
 
@@ -13,7 +13,7 @@ use clap::{Parser, Subcommand};
 /// Cross-examine a document with a panel of critic personas.
 #[derive(Debug, Parser)]
 #[command(
-    name = "praxis",
+    name = "proserpina",
     version,
     about = "Multi-agent critique and cross-examination pipeline",
     long_about = None
@@ -45,7 +45,7 @@ enum Command {
         config: Option<PathBuf>,
         /// Emit the report as JSON (machine-readable) instead of markdown.
         /// When set, errors are also emitted as structured JSON on stderr and
-        /// the exit code follows the Praxis scheme (see `praxis capabilities`).
+        /// the exit code follows the Proserpina scheme (see `proserpina capabilities`).
         #[arg(long)]
         json: bool,
         /// Resolve the roster and emit a run plan (JSON) without making any API
@@ -65,7 +65,7 @@ enum Command {
         #[arg(long)]
         timeout: Option<u64>,
     },
-    /// Print Praxis's capabilities as JSON: version, subcommands, providers
+    /// Print Proserpina's capabilities as JSON: version, subcommands, providers
     /// (and which are currently authed), personas, topologies, exit codes.
     ///
     /// Designed for AI-agent discoverability.
@@ -78,14 +78,14 @@ fn main() -> ExitCode {
         Command::Capabilities => {
             #[cfg(feature = "backend-http")]
             {
-                let caps = praxis::Capabilities::with_current_auth();
+                let caps = proserpina::Capabilities::with_current_auth();
                 let json = serde_json::to_string_pretty(&caps).unwrap_or_else(|_| "{}".to_owned());
                 println!("{json}");
                 ExitCode::SUCCESS
             }
             #[cfg(not(feature = "backend-http"))]
             {
-                let caps = praxis::Capabilities::static_info();
+                let caps = proserpina::Capabilities::static_info();
                 let json = serde_json::to_string_pretty(&caps).unwrap_or_else(|_| "{}".to_owned());
                 println!("{json}");
                 ExitCode::SUCCESS
@@ -135,7 +135,7 @@ fn main() -> ExitCode {
 
 /// Emits an error appropriately: structured JSON on stderr if `--json`, else
 /// prose.
-fn emit_error(err: &praxis::PraxisError, json: bool) {
+fn emit_error(err: &proserpina::ProserpinaError, json: bool) {
     if json {
         #[cfg(feature = "json")]
         {
@@ -143,7 +143,7 @@ fn emit_error(err: &praxis::PraxisError, json: bool) {
             return;
         }
     }
-    eprintln!("praxis: {err}");
+    eprintln!("proserpina: {err}");
 }
 
 // CLI flag sprawl is inherent to a subcommand entry point; grouping into a
@@ -159,34 +159,35 @@ fn run(
     panel: Option<&str>,
     max_attempts: Option<u32>,
     timeout: Option<u64>,
-) -> Result<String, praxis::PraxisError> {
+) -> Result<String, proserpina::ProserpinaError> {
     let source = input.to_string_lossy().to_string();
-    let text = std::fs::read_to_string(input)
-        .map_err(|e| praxis::PraxisError::agent_failure(input.to_string_lossy(), e.to_string()))?;
+    let text = std::fs::read_to_string(input).map_err(|e| {
+        proserpina::ProserpinaError::agent_failure(input.to_string_lossy(), e.to_string())
+    })?;
 
     if echo {
-        return praxis::cli::run_critique_echo(&text, &source);
+        return proserpina::cli::run_critique_echo(&text, &source);
     }
 
     #[cfg(feature = "backend-http")]
     {
         let seed = seed.unwrap_or_else(rand::random);
         // Resolve retry policy: CLI flags > [retry] config > default.
-        let retry_config = praxis::backend::credentials::Credentials::discover_or(config)
+        let retry_config = proserpina::backend::credentials::Credentials::discover_or(config)
             .map(|c| c.retry().clone())
             .unwrap_or_default();
         let policy =
-            praxis::backend::http::RetryPolicy::resolve(&retry_config, max_attempts, timeout);
+            proserpina::backend::http::RetryPolicy::resolve(&retry_config, max_attempts, timeout);
         if dry_run {
-            return praxis::cli::plan_critique(&text, &source, seed, config, json, panel);
+            return proserpina::cli::plan_critique(&text, &source, seed, config, json, panel);
         }
-        praxis::cli::run_critique(&text, &source, seed, config, json, panel, policy)
+        proserpina::cli::run_critique(&text, &source, seed, config, json, panel, policy)
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
         let _ = (seed, config, json, dry_run, panel, max_attempts, timeout);
-        let mut report = praxis::cli::run_critique_echo(&text, &source)?;
+        let mut report = proserpina::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)
     }
