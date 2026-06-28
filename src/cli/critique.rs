@@ -12,7 +12,9 @@
 //!   random (seeded), runs them as HTTP agents, and renders the report. The
 //!   default CLI path when `backend-http` is compiled in.
 
+use crate::agent::Agent;
 use crate::agent::AgentId;
+use crate::backend::http::HttpConfig;
 use crate::backend::EchoAgent;
 use crate::error::ProserpinaError;
 use crate::graph::{InteractionGraph, Topology};
@@ -20,6 +22,7 @@ use crate::persona::Persona;
 use crate::report::Report;
 use crate::runner::Runner;
 use crate::subject::Subject;
+use crate::transcript::Transcript;
 
 /// The default critic personas used when none is configured.
 /// Delegates to [`crate::persona::Persona::default_panel`].
@@ -101,17 +104,76 @@ pub fn run_critique(
     let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
     let roster = random_roster(&personas, &configs, &mut rng);
 
-    let critic_ids: Vec<AgentId> = roster.iter().map(|(p, _)| AgentId::new(p.name())).collect();
-    let graph = InteractionGraph::from(Topology::parallel(critic_ids));
+    let subject = Subject::from_markdown(input, source);
+    let system = AgentId::new(crate::runner::SYSTEM_AGENT);
 
-    let mut runner = Runner::new(graph);
-    for (persona, config) in roster {
-        let id = AgentId::new(persona.name());
-        runner = runner.with_agent(HttpAgent::new_with_policy(id, persona, config, policy));
+    // Execute critics with graceful degradation: if a critic's provider fails
+    // (after retries), try reassigning to a different authed config. If all
+    // configs fail for a persona, skip it and note the skip.
+    let mut transcript = Transcript::new();
+    let mut skipped: Vec<String> = Vec::new();
+
+    for (persona, primary_config) in &roster {
+        let persona_name = persona.name();
+        let id = AgentId::new(persona_name);
+
+        // Build the list of configs to try: primary first, then the others.
+        let mut configs_to_try: Vec<&HttpConfig> = vec![primary_config];
+        for c in &configs {
+            if c.model != primary_config.model {
+                configs_to_try.push(c);
+            }
+        }
+
+        let prompt = crate::message::Message::new(
+            system.clone(),
+            Some(id.clone()),
+            crate::message::MessageKind::Prompt,
+            subject.text().to_owned(),
+        );
+
+        let mut succeeded = false;
+        for (attempt_idx, cfg) in configs_to_try.iter().enumerate() {
+            let mut agent =
+                HttpAgent::new_with_policy(id.clone(), persona.clone(), (*cfg).clone(), policy);
+            match agent.respond(&prompt) {
+                Ok(response) => {
+                    if !json && attempt_idx > 0 {
+                        eprintln!("  ✓ {persona_name} (reassigned to {})", cfg.model);
+                    } else if !json {
+                        eprintln!("  ✓ {persona_name} ({})", cfg.model);
+                    }
+                    transcript.push(response);
+                    succeeded = true;
+                    break;
+                }
+                Err(e) => {
+                    if !json {
+                        eprintln!(
+                            "  ✗ {persona_name} ({}) failed, trying next provider...",
+                            cfg.model
+                        );
+                    }
+                    let _ = e; // error is surfaced via stderr above
+                }
+            }
+        }
+
+        if !succeeded {
+            if !json {
+                eprintln!("  — {persona_name} skipped (all providers failed)");
+            }
+            skipped.push(persona_name.to_owned());
+        }
     }
 
-    let subject = Subject::from_markdown(input, source);
-    let transcript = runner.execute(&subject)?;
+    // If ALL critics failed, there's nothing to summarize.
+    if transcript.is_empty() {
+        return Err(ProserpinaError::agent_failure(
+            "all critics",
+            "every provider failed for every critic; nothing to report",
+        ));
+    }
 
     // Summarizer pass: structure the transcript into rich findings via the
     // first authed config. Graceful on empty (yields no findings).
@@ -136,6 +198,12 @@ pub fn run_critique(
     if !json {
         // Record the seed on the markdown path so the run is reproducible.
         body.push_str(&format!("\n_Reproducibility: seed `{seed}`_\n"));
+        if !skipped.is_empty() {
+            body.push_str(&format!(
+                "\n_Skipped critics (provider failures): {}_\n",
+                skipped.join(", ")
+            ));
+        }
     }
     Ok(body)
 }
