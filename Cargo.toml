@@ -1,6 +1,6 @@
 [package]
 name = "proserpina"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 rust-version = "1.75"
 description = "Multi-agent critique and cross-examination pipeline for documents requiring intellectual rigor — provider-agnostic interaction-graph engine with pluggable LLM backends"
