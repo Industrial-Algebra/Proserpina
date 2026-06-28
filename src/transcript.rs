@@ -5,7 +5,7 @@
 
 use crate::message::Message;
 
-/// An ordered record of the [`Message`]s produced during a Praxis run.
+/// An ordered record of the [`Message`]s produced during a Proserpina run.
 ///
 /// A [`Runner`](crate::runner::Runner) appends to a `Transcript` as it walks
 /// the interaction graph. The transcript is the raw material the report
@@ -21,7 +21,7 @@ impl Transcript {
     /// # Examples
     ///
     /// ```
-    /// use praxis::Transcript;
+    /// use proserpina::Transcript;
     /// let t = Transcript::new();
     /// assert!(t.is_empty());
     /// ```

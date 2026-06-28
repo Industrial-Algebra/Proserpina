@@ -1,6 +1,6 @@
 # A Multi-Critic Run
 
-This is a real `praxis critique` output (DeepSeek + Z.ai glm-5.2, `--panel
+This is a real `proserpina critique` output (DeepSeek + Z.ai glm-5.2, `--panel
 panel`, seed 3) on a deliberately flawed proposal:
 
 > *We will deploy a distributed consensus algorithm next month using eventual
@@ -10,7 +10,7 @@ panel`, seed 3) on a deliberately flawed proposal:
 ## The command
 
 ```bash
-praxis critique proposal.md --panel panel --seed 3
+proserpina critique proposal.md --panel panel --seed 3
 ```
 
 ## The dry-run plan
@@ -62,7 +62,7 @@ Two things to notice:
 
 1. **The summarizer clustered across critics and providers.** Finding #1 was
    "raised by" four different critics spanning DeepSeek *and* Z.ai — the panel
-   converged, and Praxis tells you so.
+   converged, and Proserpina tells you so.
 2. **Each finding is actionable.** The `suggested_change` is concrete, not a
    vague "consider improving this."
 

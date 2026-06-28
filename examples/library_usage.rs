@@ -1,16 +1,16 @@
 // Copyright (C) 2026 Industrial Algebra
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//! Library-usage example: build a Praxis run programmatically, no CLI, no
+//! Library-usage example: build a Proserpina run programmatically, no CLI, no
 //! network. Uses the deterministic echo backend so it runs anywhere with no
-//! API keys. Demonstrates Praxis as an embedded critique engine.
+//! API keys. Demonstrates Proserpina as an embedded critique engine.
 //!
 //! Run with:
 //!   cargo run --example library_usage
 //!
 //! (No features required — the echo backend is always available.)
 
-use praxis::{
+use proserpina::{
     AgentId, EchoAgent, Finding, InteractionGraph, Persona, Report, Runner, Severity, Subject,
     Topology,
 };

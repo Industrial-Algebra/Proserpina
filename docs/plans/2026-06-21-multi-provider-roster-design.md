@@ -1,4 +1,4 @@
-# Praxis — Multi-Provider Roster Design
+# Proserpina — Multi-Provider Roster Design
 
 - **Date:** 2026-06-21
 - **Status:** Approved (design phase; implementation via TDD)
@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-Praxis's HTTP backend reaches any OpenAI-compatible provider. Justin has
+Proserpina's HTTP backend reaches any OpenAI-compatible provider. Justin has
 frontier-model access across DeepSeek, Z.ai (GLM), OpenAI, Google, Moonshot,
 and Alibaba. Model diversity improves cross-examination: different frontier
 models have different blind spots, biases, and strengths, so a panel that
@@ -33,7 +33,7 @@ diversity automatically, while staying reproducible and fully unit-testable.
    only env-touching piece; `random_roster` is pure given the authed configs,
    so it is unit-testable with hand-built configs + a seeded RNG.
 5. **Always-seeded RNG.** Random by default; reproducible on demand. If
-   `--seed` is omitted, Praxis generates one from entropy and prints it in the
+   `--seed` is omitted, Proserpina generates one from entropy and prints it in the
    report header so every run is re-runnable exactly.
 
 ## 3. Data Model
@@ -91,7 +91,7 @@ pub fn roster_from_env(
     personas: &[Persona],
     providers: &[Provider],
     seed: u64,
-) -> Result<Vec<(Persona, HttpConfig)>, PraxisError>
+) -> Result<Vec<(Persona, HttpConfig)>, ProserpinaError>
 ```
 
 Builds the authed configs via `config_from_env`, seeds an RNG from `seed`, and
@@ -99,7 +99,7 @@ calls `random_roster`. Errors `NoAuthedProviders` when zero keys are set.
 
 ### Error
 
-`PraxisError::NoAuthedProviders` — "no API keys found in the environment for
+`ProserpinaError::NoAuthedProviders` — "no API keys found in the environment for
 any registered provider."
 
 ## 4. Crate Shape
@@ -108,7 +108,7 @@ any registered provider."
   (it references `HttpConfig`, so it is an HTTP concern).
 - `rand` added behind the `backend-http` feature. Default build pulls in zero
   new deps.
-- Surfaced as `praxis::backend::roster::{Provider, random_roster, roster_from_env}`.
+- Surfaced as `proserpina::backend::roster::{Provider, random_roster, roster_from_env}`.
 
 ## 5. CLI Integration
 
@@ -116,7 +116,7 @@ any registered provider."
   `roster_from_env` over `Provider::registry()`.
 - New `--seed <N>` flag (optional). If omitted, generate from entropy and
   print the chosen seed in the report header so the run is reproducible.
-- `praxis critique doc.md --seed 42` reproduces an earlier run exactly.
+- `proserpina critique doc.md --seed 42` reproduces an earlier run exactly.
 
 ## 6. Implementation Sequencing (TDD)
 

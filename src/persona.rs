@@ -24,7 +24,7 @@ impl Persona {
     /// # Examples
     ///
     /// ```
-    /// use praxis::Persona;
+    /// use proserpina::Persona;
     /// let p = Persona::new("Devil's Advocate");
     /// assert_eq!(p.name(), "Devil's Advocate");
     /// assert_eq!(p.framing(), None);
@@ -157,20 +157,20 @@ impl Panel {
 ///
 /// Order: a config-defined panel under `[panels.NAME]` overrides a same-named
 /// built-in; otherwise built-in presets (`default`/`duo`/`panel`) are used; an
-/// unknown name yields [`PraxisError::UnknownPanel`] listing what *was*
+/// unknown name yields [`ProserpinaError::UnknownPanel`] listing what *was*
 /// available (built-ins + config sections).
 ///
 /// Pure given the credentials config — unit-testable without env or IO.
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::UnknownPanel`] if `name` is neither built-in nor in
+/// Returns [`ProserpinaError::UnknownPanel`] if `name` is neither built-in nor in
 /// `credentials.panels()`.
 #[cfg(feature = "backend-http")]
 pub fn resolve_panel(
     name: &str,
     credentials: &crate::backend::credentials::Credentials,
-) -> Result<Vec<Persona>, PraxisError> {
+) -> Result<Vec<Persona>, ProserpinaError> {
     // 1. Config-defined panel (overrides built-in of the same name).
     if let Some(panel) = credentials.panels().get(name) {
         return Ok(panel.personas.iter().map(|s| s.to_persona()).collect());
@@ -189,8 +189,8 @@ pub fn resolve_panel(
     for n in credentials.panels().keys() {
         available.push(n.clone());
     }
-    Err(PraxisError::unknown_panel(name, available))
+    Err(ProserpinaError::unknown_panel(name, available))
 }
 
 #[cfg(feature = "backend-http")]
-use crate::error::PraxisError;
+use crate::error::ProserpinaError;

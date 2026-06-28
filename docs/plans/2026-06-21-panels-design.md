@@ -1,10 +1,10 @@
-# Praxis — Configurable Persona Panels Design
+# Proserpina — Configurable Persona Panels Design
 
 - **Date:** 2026-06-21
 - **Status:** Approved (design phase; implementation via TDD)
 - **Branch:** `feature/configurable-panels`
 - **Depends on:** roster (#7), credentials (#8), agent-readiness (#10)
-- **Motivation:** Every live Praxis demo so far ran a single Devil's Advocate.
+- **Motivation:** Every live Proserpina demo so far ran a single Devil's Advocate.
   The roster's multi-model diversity value is unrealized until a run can be
   N critics × M providers. This is the biggest unrealized value in the
   codebase.
@@ -14,7 +14,7 @@
 Let a run use a configurable **panel** of N critic personas. Each persona is
 assigned a provider via the existing roster, so a 5-critic panel fanned across
 DeepSeek/Z.ai/OpenAI/etc. produces a genuinely diverse cross-examination — the
-core value Praxis was designed for.
+core value Proserpina was designed for.
 
 ## 2. Key Design Decisions
 
@@ -29,7 +29,7 @@ core value Praxis was designed for.
    `default_panel()` unless `--panel` is given. Back-compat preserved.
 4. **`Panel::resolve` is pure** given the config. Built-in lookup first, then
    config sections. New error `UnknownPanel`.
-5. **Agent-discoverable.** `praxis capabilities` gains a `panels` field
+5. **Agent-discoverable.** `proserpina capabilities` gains a `panels` field
    listing available panels (built-in + config-defined), so an agent learns
    what's on offer without reading docs.
 
@@ -79,19 +79,19 @@ impl Persona {
 pub fn resolve_panel(
     name: &str,
     credentials: &Credentials,
-) -> Result<Vec<Persona>, PraxisError>;
+) -> Result<Vec<Persona>, ProserpinaError>;
 ```
 
-New error: `PraxisError::UnknownPanel { name, available: Vec<String> }` —
+New error: `ProserpinaError::UnknownPanel { name, available: Vec<String> }` —
 carries the names that *were* available, so the message and the agent's error
 JSON are actionable.
 
 ## 6. CLI Integration
 
-- `praxis critique doc.md --panel red-team` — uses the named panel.
-- `praxis critique doc.md --panel panel` — uses the 5-critic built-in.
+- `proserpina critique doc.md --panel red-team` — uses the named panel.
+- `proserpina critique doc.md --panel panel` — uses the 5-critic built-in.
 - Omitted `--panel` → `default` (unchanged behavior).
-- `praxis capabilities` gains a `panels: Vec<String>` field listing built-in
+- `proserpina capabilities` gains a `panels: Vec<String>` field listing built-in
   + config-defined panel names.
 
 ## 7. Implementation Sequencing (TDD)

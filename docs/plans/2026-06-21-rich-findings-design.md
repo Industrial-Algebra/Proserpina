@@ -1,4 +1,4 @@
-# Praxis — Rich Findings & Dual Render Design
+# Proserpina — Rich Findings & Dual Render Design
 
 - **Date:** 2026-06-21
 - **Status:** Approved (design phase; implementation via TDD)
@@ -9,7 +9,7 @@
 
 ## 1. Purpose
 
-Today `praxis critique` emits a flat report: one `[major]` finding per critic
+Today `proserpina critique` emits a flat report: one `[major]` finding per critic
 message, verbatim text, no structure. That serves neither of Justin's two
 needs: (a) **actionable recommended changes** to the document, and (b) a
 **human-readable session summary** he can consume at a glance. It also blocks
@@ -48,12 +48,12 @@ block-on-runtime sync/async bridge. Input: the subject text plus the full
 transcript serialized as `[critic, kind, text]` turns. Instruction:
 
 > You are summarizing a multi-critic peer review. Group the critiques into
-> distinct issues. For each issue, emit a fenced ` ```praxis-finding ` block
+> distinct issues. For each issue, emit a fenced ` ```proserpina-finding ` block
 > with fields: `severity` (info|minor|major|blocker), `category`, `summary`,
 > `location`, `quote`, `suggested_change`, `supporting_critics` (comma-separated
 > critic names). Emit one block per issue.
 
-The parser extracts each ` ```praxis-finding ` fence and parses its
+The parser extracts each ` ```proserpina-finding ` fence and parses its
 field-lines. Unparseable blocks degrade gracefully (§2.4).
 
 ### Provider selection
@@ -101,13 +101,13 @@ Both consume the same `Vec<Finding>`.
 - `src/report.rs` — `Finding` extended; markdown renderer rewritten as a
   digest; `to_json()` added.
 - `src/summary.rs` (new, behind `backend-http`) — the summarizer: prompt
-  rendering, `praxis-finding` block parsing, `summarize(transcript, subject,
+  rendering, `proserpina-finding` block parsing, `summarize(transcript, subject,
   &HttpConfig) -> Result<Vec<Finding>>`. Pure parse logic unit-tested; network
   covered by an `#[ignore]` live test + an example harness
   (`examples/summarize_smoke.rs`).
 - `src/cli/critique.rs` — `run_critique` makes the summarizer call after the
   run, builds a rich `Report`, renders markdown (default) or JSON (`--json`).
-- New `PraxisError::SummaryFailed { detail }` variant.
+- New `ProserpinaError::SummaryFailed { detail }` variant.
 
 ## 7. Deliberately Out of Scope (next PRs)
 
@@ -122,7 +122,7 @@ Both consume the same `Vec<Finding>`.
 Each step RED → GREEN → REFACTOR, every public item documented.
 
 1. **`Finding` extension + accessors** — pure; extend existing `report` tests.
-2. **`praxis-finding` block parser** — pure; well-formed multi-finding case +
+2. **`proserpina-finding` block parser** — pure; well-formed multi-finding case +
    graceful-degradation cases (missing fields, unparseable block).
 3. **Summarizer prompt rendering** — pure; carries subject + transcript turns.
 4. **`summarize` orchestration** — live `#[ignore]` test + example harness.

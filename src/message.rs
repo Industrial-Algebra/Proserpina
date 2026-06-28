@@ -83,7 +83,7 @@ impl Message {
     /// # Examples
     ///
     /// ```
-    /// use praxis::{AgentId, Message, MessageKind};
+    /// use proserpina::{AgentId, Message, MessageKind};
     /// let msg = Message::new(
     ///     AgentId::new("critic-a"),
     ///     Some(AgentId::new("critic-b")),

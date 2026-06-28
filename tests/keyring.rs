@@ -12,8 +12,8 @@
 
 use std::collections::HashMap;
 
-use praxis::backend::credentials::{resolve_configs_with_keyring, Credentials};
-use praxis::backend::roster::Provider;
+use proserpina::backend::credentials::{resolve_configs_with_keyring, Credentials};
+use proserpina::backend::roster::Provider;
 
 fn env(keys: &[(&str, &str)]) -> HashMap<String, String> {
     keys.iter()
@@ -99,7 +99,7 @@ fn keyring_and_env_can_auth_different_providers_simultaneously() {
     assert_eq!(by_model["glm-5.2"], "sk-env");
 }
 
-/// Live keychain round-trip: writes a `praxis:DEEPSEEK_API_KEY` entry, reads
+/// Live keychain round-trip: writes a `proserpina:DEEPSEEK_API_KEY` entry, reads
 /// it through [`read_keyring`], asserts it matches, then cleans up. Ignored by
 /// default — requires a working OS keychain backend (macOS Keychain / Linux
 /// Secret Service / Windows Credential Manager). On a headless Linux box
@@ -109,9 +109,9 @@ fn keyring_and_env_can_auth_different_providers_simultaneously() {
 #[test]
 #[ignore]
 fn live_keyring_roundtrip() {
-    use praxis::backend::credentials::{read_keyring, KEYRING_SERVICE};
+    use proserpina::backend::credentials::{read_keyring, KEYRING_SERVICE};
     let var = "DEEPSEEK_API_KEY";
-    let sentinel = "praxis-test-sentinel-key";
+    let sentinel = "proserpina-test-sentinel-key";
     // Clean up any leftover entry first.
     let _ = keyring::Entry::new(KEYRING_SERVICE, var).and_then(|e| e.delete_credential());
 

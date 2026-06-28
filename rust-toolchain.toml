@@ -1,4 +1,4 @@
-# Rust toolchain configuration for Praxis
+# Rust toolchain configuration for Proserpina
 #
 # Following Industrial Algebra ecosystem conventions:
 # nightly channel + rustfmt + clippy components

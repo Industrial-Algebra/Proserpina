@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Industrial Algebra
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//! The `praxis` command-line interface.
+//! The `proserpina` command-line interface.
 //!
 //! The CLI is a thin wrapper over testable library entry points, so the
 //! critique logic can be exercised without spawning a process:

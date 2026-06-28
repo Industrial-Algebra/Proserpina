@@ -7,7 +7,7 @@ impl Runner {
     pub fn new(graph: InteractionGraph) -> Self;
     #[must_use]
     pub fn with_agent(self, agent: impl Agent + 'static) -> Self;
-    pub fn execute(&mut self, subject: &Subject) -> Result<Transcript, PraxisError>;
+    pub fn execute(&mut self, subject: &Subject) -> Result<Transcript, ProserpinaError>;
 }
 ```
 
@@ -30,5 +30,5 @@ critics reply to `Some(system)`.
 
 ## Errors
 
-- [`PraxisError::MissingAgent`](./errors.md) — a graph node has no registered agent.
-- [`PraxisError::AgentFailure`](./errors.md) — an agent's `respond` failed.
+- [`ProserpinaError::MissingAgent`](./errors.md) — a graph node has no registered agent.
+- [`ProserpinaError::AgentFailure`](./errors.md) — an agent's `respond` failed.

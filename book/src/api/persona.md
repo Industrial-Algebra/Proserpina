@@ -22,7 +22,7 @@ impl Panel {
     pub fn name(&self) -> &'static str;
 }
 
-pub fn resolve_panel(name: &str, credentials: &Credentials) -> Result<Vec<Persona>, PraxisError>;
+pub fn resolve_panel(name: &str, credentials: &Credentials) -> Result<Vec<Persona>, ProserpinaError>;
 ```
 
 A `Persona` is the lens a critic applies — **data, not an enum** — so critics

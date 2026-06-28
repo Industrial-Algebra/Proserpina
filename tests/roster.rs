@@ -10,8 +10,8 @@
 
 #![cfg(feature = "backend-http")]
 
-use praxis::backend::roster::{random_roster, roster_from_env, Provider};
-use praxis::Persona;
+use proserpina::backend::roster::{random_roster, roster_from_env, Provider};
+use proserpina::Persona;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
@@ -30,7 +30,7 @@ fn provider_exposes_its_fields() {
 #[test]
 fn config_from_env_returns_none_when_key_unset() {
     // Use a var name nobody would plausibly set, then make sure it's absent.
-    let var = "PRAXIS_TEST_DEFINITELY_UNSET_KEY";
+    let var = "PROSERPINA_TEST_DEFINITELY_UNSET_KEY";
     std::env::remove_var(var);
     let p = Provider::new("test")
         .with_base_url("https://example.invalid/v1")
@@ -41,7 +41,7 @@ fn config_from_env_returns_none_when_key_unset() {
 
 #[test]
 fn config_from_env_builds_config_when_key_set() {
-    let var = "PRAXIS_TEST_PROVIDER_KEY";
+    let var = "PROSERPINA_TEST_PROVIDER_KEY";
     std::env::set_var(var, "sk-test-value");
     let p = Provider::new("test")
         .with_base_url("https://example.invalid/v1")
@@ -83,8 +83,8 @@ fn registry_entries_are_fully_populated() {
 
 // ---- random_roster: pure core ----
 
-fn cfg(tag: &str) -> praxis::backend::http::HttpConfig {
-    praxis::backend::http::HttpConfig {
+fn cfg(tag: &str) -> proserpina::backend::http::HttpConfig {
+    proserpina::backend::http::HttpConfig {
         base_url: format!("https://{tag}.invalid/v1"),
         model: format!("{tag}-model"),
         api_key: format!("key-{tag}"),
@@ -171,8 +171,8 @@ fn random_roster_with_no_personas_produces_empty_roster() {
 #[test]
 fn roster_from_env_errors_when_no_providers_are_authed() {
     // A registry of providers whose key vars are all unset.
-    let var_a = "PRAXIS_TEST_ROSTER_UNSET_A";
-    let var_b = "PRAXIS_TEST_ROSTER_UNSET_B";
+    let var_a = "PROSERPINA_TEST_ROSTER_UNSET_A";
+    let var_b = "PROSERPINA_TEST_ROSTER_UNSET_B";
     std::env::remove_var(var_a);
     std::env::remove_var(var_b);
     let providers = vec![
@@ -196,8 +196,8 @@ fn roster_from_env_errors_when_no_providers_are_authed() {
 fn roster_from_env_uses_only_authed_providers() {
     // One authed, one not. The roster should draw only from the authed one,
     // regardless of how many personas there are.
-    let var_authed = "PRAXIS_TEST_ROSTER_AUTHED";
-    let var_unauthed = "PRAXIS_TEST_ROSTER_UNAUTHED";
+    let var_authed = "PROSERPINA_TEST_ROSTER_AUTHED";
+    let var_unauthed = "PROSERPINA_TEST_ROSTER_UNAUTHED";
     std::env::set_var(var_authed, "sk-authed");
     std::env::remove_var(var_unauthed);
     let providers = vec![

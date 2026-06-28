@@ -5,7 +5,7 @@
 
 #![cfg(feature = "cli")]
 
-use praxis::cli::run_critique_echo;
+use proserpina::cli::run_critique_echo;
 
 #[test]
 fn run_critique_produces_a_markdown_report() {

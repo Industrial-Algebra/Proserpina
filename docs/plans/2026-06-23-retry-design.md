@@ -1,4 +1,4 @@
-# Praxis — Retry / Timeout / Backoff Design
+# Proserpina — Retry / Timeout / Backoff Design
 
 - **Date:** 2026-06-23
 - **Status:** Approved (design phase; implementation via TDD)
@@ -13,7 +13,7 @@
 ## 1. Purpose
 
 Add three missing capabilities with one shared implementation:
-1. **Timeout** — a hung provider no longer hangs Praxis forever.
+1. **Timeout** — a hung provider no longer hangs Proserpina forever.
 2. **Retry** — transient failures (429/408/5xx/network) get retried.
 3. **Backoff** — exponential + jitter, so retry doesn't hammer a rate-limited
    provider.
@@ -36,7 +36,7 @@ Add three missing capabilities with one shared implementation:
 5. **Config knobs shipped now** (per Justin's choice): `[retry]` in
    credentials.toml + `--max-attempts` / `--timeout` CLI flags. Sensible
    defaults baked in; overrides available from day one.
-6. **Per-retry stderr logging.** `praxis: {label} attempt {n}/{max} failed
+6. **Per-retry stderr logging.** `proserpina: {label} attempt {n}/{max} failed
    ({status}), retrying in {ms}ms` so a retrying run isn't silent. Final
    failure still goes through the existing error path (`--json`-gated JSON,
    exit codes).
@@ -88,7 +88,7 @@ async fn send_chat_completion(
     body: &serde_json::Value,
     policy: &RetryPolicy,
     label: &str,          // for the retry log line (e.g. "Devil's Advocate (glm-5.2)")
-) -> Result<String, PraxisError>;
+) -> Result<String, ProserpinaError>;
 ```
 
 Loop:

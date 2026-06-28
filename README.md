@@ -1,32 +1,32 @@
-# Praxis — Multi-Agent Critique & Cross-Examination
+# Proserpina — Multi-Agent Critique & Cross-Examination
 
 > A pipeline that puts your documents — pre-prints, roadmaps, plans, specs — in
 > the witness box and cross-examines them for intellectual rigor, using a panel
 > of frontier-model critics.
 
-[![CI](https://github.com/Industrial-Algebra/Praxis/actions/workflows/ci.yml/badge.svg)](https://github.com/Industrial-Algebra/Praxis/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/praxis.svg)](https://crates.io/crates/praxis)
-[![docs.rs](https://docs.rs/praxis/badge.svg)](https://docs.rs/praxis)
+[![CI](https://github.com/Industrial-Algebra/Proserpina/actions/workflows/ci.yml/badge.svg)](https://github.com/Industrial-Algebra/Proserpina/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/proserpina.svg)](https://crates.io/crates/proserpina)
+[![docs.rs](https://docs.rs/proserpina/badge.svg)](https://docs.rs/proserpina)
 
-Praxis runs a configurable ensemble of critic **personas** over a document via
+Proserpina runs a configurable ensemble of critic **personas** over a document via
 a **provider-agnostic interaction-graph engine**. A dedicated **summarizer**
 LLM pass clusters the panel's critiques into actionable, per-issue findings.
 LLM backends are pluggable; a deterministic `EchoAgent` makes the whole
 pipeline testable with zero LLM dependencies.
 
-> ⚠️ **Privacy: Praxis sends your document to a frontier-model provider.**
+> ⚠️ **Privacy: Proserpina sends your document to a frontier-model provider.**
 > A critique ships the full document text to the provider(s) backing the
-> critics and summarizer. For confidential or regulated content, route Praxis
+> critics and summarizer. For confidential or regulated content, route Proserpina
 > to a **local** model (Ollama, LM Studio) via a custom config section — no
 > data leaves your machine. See
-> [Security & Privacy](https://industrial-algebra-praxis.netlify.app/security/considerations.html)
+> [Security & Privacy](https://industrial-algebra-proserpina.netlify.app/security/considerations.html)
 > for the full picture.
 
 ## Why multi-agent critique?
 
 Different frontier models have different blind spots, biases, and strengths. A
 panel that mixes them catches what a single reviewer — or a homogeneous panel —
-misses. Praxis assigns each critic a provider drawn (seeded, reproducibly) from
+misses. Proserpina assigns each critic a provider drawn (seeded, reproducibly) from
 your authed set, so a 5-critic run naturally spans DeepSeek, Z.ai GLM, OpenAI,
 Moonshot, Alibaba, and Google. The summarizer then tells you where the panel
 *agreed* (many critics, one finding) vs. where it *contested*.
@@ -47,16 +47,16 @@ Moonshot, Alibaba, and Google. The summarizer then tells you where the panel
 ## Quick start
 
 ```bash
-cargo install praxis
+cargo install proserpina
 
 # Set one provider key (DeepSeek is the zero-config default)...
 export DEEPSEEK_API_KEY=sk-...
 
 # ...and cross-examine a document.
-praxis critique roadmap.md
+proserpina critique roadmap.md
 
 # Or use a 5-critic panel fanned across all your authed providers:
-praxis critique roadmap.md --panel panel
+proserpina critique roadmap.md --panel panel
 ```
 
 A run prints a markdown digest:
@@ -82,7 +82,7 @@ Add `--json` for machine-readable output; `--seed N` to reproduce a run exactly.
 ## Configuration
 
 Providers, persona panels, and retry policy live in a single TOML file at
-`~/.config/praxis/credentials.toml` (overridable via `PRAXIS_CONFIG` or
+`~/.config/proserpina/credentials.toml` (overridable via `PROSERPINA_CONFIG` or
 `--config`):
 
 ```toml
@@ -123,14 +123,14 @@ Define your own under `[panels.NAME]` (above). `--panel <name>` selects one.
 
 ## Agent integration
 
-Praxis is designed to be called on the fly by AI agents across your dev
+Proserpina is designed to be called on the fly by AI agents across your dev
 environments. The full loop:
 
 | Move | Command |
 |---|---|
-| What can you do, right now? | `praxis capabilities` |
-| What would this run do / cost? | `praxis critique doc.md --dry-run --seed N` |
-| Do it (structured) | `praxis critique doc.md --json` |
+| What can you do, right now? | `proserpina capabilities` |
+| What would this run do / cost? | `proserpina critique doc.md --dry-run --seed N` |
+| Do it (structured) | `proserpina critique doc.md --json` |
 | What went wrong? | structured JSON on stderr + exit code |
 
 `capabilities` reports dynamic auth state (which providers are authed *in this
@@ -150,7 +150,7 @@ via `[retry]` or `--max-attempts`/`--timeout`.
 | Feature | What it adds |
 |---|---|
 | `std` (default) | standard library support |
-| `cli` | the `praxis` binary |
+| `cli` | the `proserpina` binary |
 | `serde` | Serialize/Deserialize impls for core types |
 | `json` | machine-readable JSON report output |
 | `backend-http` | the OpenAI-compatible HTTP agent, multi-provider roster, credentials config, summarizer |

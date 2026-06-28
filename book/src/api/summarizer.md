@@ -6,7 +6,7 @@ pub fn summarize(
     transcript: &Transcript,
     config: &HttpConfig,
     policy: &RetryPolicy,
-) -> Result<Vec<Finding>, PraxisError>;
+) -> Result<Vec<Finding>, ProserpinaError>;
 
 pub fn parse_findings(body: &str) -> Vec<Finding>;
 pub fn render_summary_prompt(subject: &Subject, transcript: &Transcript) -> Vec<SummaryMessage>;
@@ -14,7 +14,7 @@ pub fn render_summary_prompt(subject: &Subject, transcript: &Transcript) -> Vec<
 
 After a run, `summarize` makes a second LLM call over the whole transcript +
 subject, asking the model to group critiques into distinct issues and emit each
-as a fenced ` ```praxis-finding ` block. `parse_findings` extracts those blocks
+as a fenced ` ```proserpina-finding ` block. `parse_findings` extracts those blocks
 and parses `key: value` lines into [`Finding`](./report.md)s.
 
 **Graceful degradation:** `parse_findings` never fails on a malformed response

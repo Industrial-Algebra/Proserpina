@@ -5,9 +5,9 @@
 
 #![cfg(feature = "backend-http")]
 
-use praxis::backend::credentials::Credentials;
-use praxis::persona::{resolve_panel, Panel};
-use praxis::Persona;
+use proserpina::backend::credentials::Credentials;
+use proserpina::persona::{resolve_panel, Panel};
+use proserpina::Persona;
 
 #[test]
 fn archetypes_returns_the_five_built_in_personas() {
@@ -144,7 +144,7 @@ personas = [{ name = "Custom" }]
 
 #[test]
 fn capabilities_lists_available_panels() {
-    let caps = praxis::Capabilities::static_info();
+    let caps = proserpina::Capabilities::static_info();
     assert!(caps.panels.contains(&"default".to_owned()));
     assert!(caps.panels.contains(&"duo".to_owned()));
     assert!(caps.panels.contains(&"panel".to_owned()));

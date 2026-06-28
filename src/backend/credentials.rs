@@ -4,8 +4,8 @@
 //! The credentials config: a standalone file mapping provider names to API
 //! keys and optional model/base_url overrides.
 //!
-//! Praxis reads `~/.config/praxis/credentials.toml` (location overridable via
-//! `PRAXIS_CONFIG` or `--config`) so it can reach providers whose keys are not
+//! Proserpina reads `~/.config/proserpina/credentials.toml` (location overridable via
+//! `PROSERPINA_CONFIG` or `--config`) so it can reach providers whose keys are not
 //! in the environment — pi mediates several providers via OAuth/extensions and
 //! does not expose plain keys to a separate process. The same file also lets
 //! you override the registry's model defaults (e.g. pin a specific Z.ai or
@@ -21,7 +21,7 @@ use std::path::Path;
 
 use crate::backend::http::HttpConfig;
 use crate::backend::roster::Provider;
-use crate::error::PraxisError;
+use crate::error::ProserpinaError;
 
 /// A per-provider override block parsed from the config file.
 ///
@@ -97,17 +97,17 @@ impl Credentials {
     ///
     /// # Errors
     ///
-    /// Returns [`PraxisError::MalformedCredentials`] if the TOML is invalid.
+    /// Returns [`ProserpinaError::MalformedCredentials`] if the TOML is invalid.
     ///
     /// # Examples
     ///
     /// ```
-    /// use praxis::backend::credentials::Credentials;
+    /// use proserpina::backend::credentials::Credentials;
     /// let creds = Credentials::from_toml(r#"[deepseek]
     /// api_key = "sk-x""#).expect("valid toml");
     /// assert_eq!(creds.override_for("deepseek").unwrap().api_key.as_deref(), Some("sk-x"));
     /// ```
-    pub fn from_toml(toml: &str) -> Result<Self, PraxisError> {
+    pub fn from_toml(toml: &str) -> Result<Self, ProserpinaError> {
         if toml.trim().is_empty() {
             return Ok(Self::default());
         }
@@ -123,8 +123,8 @@ impl Credentials {
             #[serde(flatten)]
             providers: HashMap<String, ProviderOverride>,
         }
-        let parsed: Raw =
-            ::toml::from_str(toml).map_err(|e| PraxisError::malformed_credentials("<str>", e))?;
+        let parsed: Raw = ::toml::from_str(toml)
+            .map_err(|e| ProserpinaError::malformed_credentials("<str>", e))?;
         Ok(Self {
             providers: parsed.providers,
             panels: parsed.panels,
@@ -136,28 +136,28 @@ impl Credentials {
     ///
     /// # Errors
     ///
-    /// Returns [`PraxisError::MalformedCredentials`] if the file cannot be
+    /// Returns [`ProserpinaError::MalformedCredentials`] if the file cannot be
     /// read or parsed.
-    pub fn from_path(path: &Path) -> Result<Self, PraxisError> {
+    pub fn from_path(path: &Path) -> Result<Self, ProserpinaError> {
         let display = path.display().to_string();
         let contents = std::fs::read_to_string(path)
-            .map_err(|e| PraxisError::malformed_credentials(&display, e))?;
-        Self::from_toml(&contents).map_err(|e| PraxisError::malformed_credentials(&display, e))
+            .map_err(|e| ProserpinaError::malformed_credentials(&display, e))?;
+        Self::from_toml(&contents).map_err(|e| ProserpinaError::malformed_credentials(&display, e))
     }
 
     /// Discovers the default config file and loads it.
     ///
-    /// Searches in order: `$PRAXIS_CONFIG`, then
-    /// `$XDG_CONFIG_HOME/praxis/credentials.toml`, then
-    /// `~/.config/praxis/credentials.toml`. A **missing** file is not an
+    /// Searches in order: `$PROSERPINA_CONFIG`, then
+    /// `$XDG_CONFIG_HOME/proserpina/credentials.toml`, then
+    /// `~/.config/proserpina/credentials.toml`. A **missing** file is not an
     /// error — returns empty credentials so the run degrades gracefully to
     /// env-var-only auth.
     ///
     /// # Errors
     ///
-    /// Returns [`PraxisError::MalformedCredentials`] only if a discovered
+    /// Returns [`ProserpinaError::MalformedCredentials`] only if a discovered
     /// file exists but cannot be read or parsed.
-    pub fn discover() -> Result<Self, PraxisError> {
+    pub fn discover() -> Result<Self, ProserpinaError> {
         for path in Self::candidate_paths() {
             if path.exists() {
                 return Self::from_path(&path);
@@ -169,14 +169,14 @@ impl Credentials {
     /// Returns the ordered list of config-file candidate paths.
     fn candidate_paths() -> Vec<std::path::PathBuf> {
         let mut paths = Vec::new();
-        if let Ok(p) = std::env::var("PRAXIS_CONFIG") {
+        if let Ok(p) = std::env::var("PROSERPINA_CONFIG") {
             paths.push(std::path::PathBuf::from(p));
         }
         if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
-            paths.push(std::path::PathBuf::from(xdg).join("praxis/credentials.toml"));
+            paths.push(std::path::PathBuf::from(xdg).join("proserpina/credentials.toml"));
         }
         if let Ok(home) = std::env::var("HOME") {
-            paths.push(std::path::PathBuf::from(home).join(".config/praxis/credentials.toml"));
+            paths.push(std::path::PathBuf::from(home).join(".config/proserpina/credentials.toml"));
         }
         paths
     }
@@ -203,7 +203,7 @@ impl Credentials {
     /// # Errors
     ///
     /// See [`Credentials::from_path`] and [`Credentials::discover`].
-    pub fn discover_or(path: Option<&std::path::Path>) -> Result<Self, PraxisError> {
+    pub fn discover_or(path: Option<&std::path::Path>) -> Result<Self, ProserpinaError> {
         match path {
             Some(p) => Self::from_path(p),
             None => Self::discover(),
@@ -245,13 +245,13 @@ fn env_var_name_for(provider_name: &str) -> String {
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::IncompleteCustomProvider`] if a custom provider is
+/// Returns [`ProserpinaError::IncompleteCustomProvider`] if a custom provider is
 /// missing a required field.
 pub fn resolve_configs(
     registry: &[Provider],
     credentials: &Credentials,
     env_keys: &HashMap<String, String>,
-) -> Result<Vec<HttpConfig>, PraxisError> {
+) -> Result<Vec<HttpConfig>, ProserpinaError> {
     resolve_configs_with_keyring(registry, credentials, env_keys, &HashMap::new())
 }
 
@@ -266,14 +266,14 @@ pub fn resolve_configs(
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::IncompleteCustomProvider`] if a custom provider is
+/// Returns [`ProserpinaError::IncompleteCustomProvider`] if a custom provider is
 /// missing a required field.
 pub fn resolve_configs_with_keyring(
     registry: &[Provider],
     credentials: &Credentials,
     env_keys: &HashMap<String, String>,
     keyring_keys: &HashMap<String, String>,
-) -> Result<Vec<HttpConfig>, PraxisError> {
+) -> Result<Vec<HttpConfig>, ProserpinaError> {
     let registry_names: std::collections::HashSet<&str> =
         registry.iter().map(|p| p.name()).collect();
     let mut out = Vec::new();
@@ -327,7 +327,7 @@ pub fn resolve_configs_with_keyring(
             missing.push("base_url");
         }
         if !missing.is_empty() {
-            return Err(PraxisError::incomplete_custom_provider(name, missing));
+            return Err(ProserpinaError::incomplete_custom_provider(name, missing));
         }
         out.push(HttpConfig {
             base_url: base_url.unwrap(),
@@ -349,7 +349,7 @@ pub fn resolve_configs_with_keyring(
 /// See [`authed_configs`].
 pub fn authed_configs_with(
     config_path: Option<&std::path::Path>,
-) -> Result<Vec<HttpConfig>, PraxisError> {
+) -> Result<Vec<HttpConfig>, ProserpinaError> {
     let credentials = match config_path {
         Some(path) => Credentials::from_path(path)?,
         None => Credentials::discover()?,
@@ -380,28 +380,28 @@ pub fn authed_configs_with(
 /// the built-in provider registry.
 ///
 /// Returns an empty `Vec` (not an error) when nothing is authed — surfacing
-/// [`PraxisError::NoAuthedProviders`] is the caller's job, since the right
+/// [`ProserpinaError::NoAuthedProviders`] is the caller's job, since the right
 /// response depends on context (the CLI errors; a library caller may proceed).
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::MalformedCredentials`] if a discovered config file
-/// is unreadable or unparseable, or [`PraxisError::IncompleteCustomProvider`]
+/// Returns [`ProserpinaError::MalformedCredentials`] if a discovered config file
+/// is unreadable or unparseable, or [`ProserpinaError::IncompleteCustomProvider`]
 /// if a custom provider is missing required fields.
-pub fn authed_configs() -> Result<Vec<HttpConfig>, PraxisError> {
+pub fn authed_configs() -> Result<Vec<HttpConfig>, ProserpinaError> {
     authed_configs_with(None)
 }
 
 // ---- OS keychain tier (behind the `keyring` feature) ----
 
-/// The keychain service name Praxis stores keys under. An entry for a
-/// provider is looked up as `praxis:<its key env var>` (e.g. `praxis:DEEPSEEK_API_KEY`).
+/// The keychain service name Proserpina stores keys under. An entry for a
+/// provider is looked up as `proserpina:<its key env var>` (e.g. `proserpina:DEEPSEEK_API_KEY`).
 #[cfg(feature = "keyring")]
-pub const KEYRING_SERVICE: &str = "praxis";
+pub const KEYRING_SERVICE: &str = "proserpina";
 
 /// Reads one provider's key from the OS keychain, keyed by its env-var name.
 ///
-/// Returns `Ok(Some(key))` if an entry exists under `praxis:<key_env_var>`,
+/// Returns `Ok(Some(key))` if an entry exists under `proserpina:<key_env_var>`,
 /// `Ok(None)` if no entry exists, or `Err` if the keychain itself is
 /// inaccessible (no Secret Service on a headless Linux box, etc.). A missing
 /// entry is the normal case (most providers won't have one); a keychain error
@@ -410,15 +410,15 @@ pub const KEYRING_SERVICE: &str = "praxis";
 ///
 /// # Errors
 ///
-/// Returns [`PraxisError::KeyringAccess`] if the keychain backend errors.
+/// Returns [`ProserpinaError::KeyringAccess`] if the keychain backend errors.
 #[cfg(feature = "keyring")]
-pub fn read_keyring(key_env_var: &str) -> Result<Option<String>, PraxisError> {
+pub fn read_keyring(key_env_var: &str) -> Result<Option<String>, ProserpinaError> {
     let entry = keyring::Entry::new(KEYRING_SERVICE, key_env_var)
-        .map_err(|e| PraxisError::keyring_access(key_env_var, e))?;
+        .map_err(|e| ProserpinaError::keyring_access(key_env_var, e))?;
     match entry.get_password() {
         Ok(p) => Ok(Some(p)),
         Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(PraxisError::keyring_access(key_env_var, e)),
+        Err(e) => Err(ProserpinaError::keyring_access(key_env_var, e)),
     }
 }
 

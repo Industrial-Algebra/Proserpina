@@ -6,12 +6,12 @@
 //! These exercise the public surface assembled in `src/lib.rs` across the
 //! `error`, `subject`, `agent`, `persona`, and `message` modules.
 
-use praxis::{AgentId, Message, MessageKind, Persona, PraxisError, Subject};
+use proserpina::{AgentId, Message, MessageKind, Persona, ProserpinaError, Subject};
 
 #[test]
 fn error_renders_descriptive_message() {
-    // PraxisError is thiserror-derived; the Agent variant carries context.
-    let err = PraxisError::agent_failure("claude-1", "rate limited");
+    // ProserpinaError is thiserror-derived; the Agent variant carries context.
+    let err = ProserpinaError::agent_failure("claude-1", "rate limited");
     let rendered = format!("{err}");
     assert!(
         rendered.contains("claude-1"),
@@ -27,7 +27,7 @@ fn error_renders_descriptive_message() {
 fn error_is_send_and_sync() {
     // Library errors must be Send + Sync so backends can be used across threads.
     fn assert_send_sync<T: Send + Sync>() {}
-    assert_send_sync::<PraxisError>();
+    assert_send_sync::<ProserpinaError>();
 }
 
 #[test]

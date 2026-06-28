@@ -3,7 +3,7 @@
 
 //! Integration tests for the interaction graph and runner.
 
-use praxis::{
+use proserpina::{
     Agent, AgentId, EchoAgent, InteractionGraph, Message, MessageKind, Persona, Runner, Subject,
     Topology, Transcript,
 };
@@ -259,8 +259,8 @@ impl Agent for ConcedingAgent {
         &self.persona
     }
 
-    fn respond(&mut self, msg: &Message) -> Result<Message, praxis::PraxisError> {
-        use praxis::MessageKind as K;
+    fn respond(&mut self, msg: &Message) -> Result<Message, proserpina::ProserpinaError> {
+        use proserpina::MessageKind as K;
         let kind = match msg.kind() {
             K::Prompt => K::Critique,
             K::Critique => K::Concession,

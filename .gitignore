@@ -1,3 +1,10 @@
 /target
 /book/book/
 .netlify/
+
+# Prevent accidental credential commits
+.env
+.env.*
+*.env
+credentials.toml
+secrets.toml

@@ -41,7 +41,7 @@ impl EchoAgent {
     /// # Examples
     ///
     /// ```
-    /// use praxis::{Agent, AgentId, EchoAgent, Persona};
+    /// use proserpina::{Agent, AgentId, EchoAgent, Persona};
     /// let agent = EchoAgent::new(
     ///     AgentId::new("methodologist"),
     ///     Persona::new("Methodologist"),
@@ -62,7 +62,7 @@ impl Agent for EchoAgent {
         &self.persona
     }
 
-    fn respond(&mut self, msg: &Message) -> Result<Message, crate::error::PraxisError> {
+    fn respond(&mut self, msg: &Message) -> Result<Message, crate::error::ProserpinaError> {
         // Re-stamp the reply as authored by this agent and address it back to
         // the original sender. The kind encodes the agent's role in the
         // dialogue:

@@ -9,7 +9,7 @@
 
 #![cfg(all(feature = "cli", feature = "backend-http"))]
 
-use praxis::cli::run_critique;
+use proserpina::cli::run_critique;
 
 #[test]
 fn run_critique_errors_when_no_provider_keys_are_set() {
@@ -36,7 +36,7 @@ fn run_critique_errors_when_no_provider_keys_are_set() {
         None,
         false,
         None,
-        praxis::backend::http::RetryPolicy::NONE,
+        proserpina::backend::http::RetryPolicy::NONE,
     );
     let err = result.expect_err("no keys set -> should error");
     let msg = format!("{err}");

@@ -1,12 +1,12 @@
 # Feature Flags
 
-Praxis uses additive feature gates — features add capability; they never
+Proserpina uses additive feature gates — features add capability; they never
 remove existing API.
 
 | Feature | What it adds |
 |---|---|
 | `std` (default) | standard library support |
-| `cli` | the `praxis` binary |
+| `cli` | the `proserpina` binary |
 | `serde` | `Serialize`/`Deserialize` impls for core types |
 | `json` | machine-readable JSON report output (implies `serde`) |
 | `backend-http` | the OpenAI-compatible HTTP agent, multi-provider roster, credentials config, summarizer (implies `serde`) |
@@ -17,7 +17,7 @@ remove existing API.
 For real use with LLM providers:
 
 ```bash
-cargo install praxis --features cli,backend-http,json
+cargo install proserpina --features cli,backend-http,json
 ```
 
 ## Default build

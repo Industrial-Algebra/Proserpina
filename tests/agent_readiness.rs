@@ -6,8 +6,8 @@
 
 #![cfg(feature = "backend-http")]
 
-use praxis::backend::http::{HttpAgent, HttpConfig};
-use praxis::{Agent, AgentId, Capabilities, Message, MessageKind, Persona, Plan};
+use proserpina::backend::http::{HttpAgent, HttpConfig};
+use proserpina::{Agent, AgentId, Capabilities, Message, MessageKind, Persona, Plan};
 
 #[test]
 fn http_agent_error_names_the_model_not_just_the_persona() {
@@ -68,9 +68,9 @@ fn capabilities_provider_list_marks_authed_vs_unauthed() {
     ] {
         std::env::remove_var(var);
     }
-    std::env::set_var("PRAXIS_CONFIG", "/nonexistent/praxis-test-cap.toml");
+    std::env::set_var("PROSERPINA_CONFIG", "/nonexistent/proserpina-test-cap.toml");
     let caps = Capabilities::with_current_auth();
-    std::env::remove_var("PRAXIS_CONFIG");
+    std::env::remove_var("PROSERPINA_CONFIG");
 
     // Six registry providers reported.
     assert!(caps.providers.len() >= 6, "registry providers present");
@@ -146,18 +146,18 @@ fn plan_serializes_to_json() {
     assert!(json.contains("\"estimated_total_calls\""));
 }
 
-// ---- PraxisError: exit codes + error JSON ----
+// ---- ProserpinaError: exit codes + error JSON ----
 
-use praxis::PraxisError;
+use proserpina::ProserpinaError;
 
 #[test]
 fn exit_code_maps_each_variant_to_a_distinct_value() {
-    assert_eq!(PraxisError::no_authed_providers(vec![]).exit_code(), 10);
-    assert_eq!(PraxisError::agent_failure("x", "y").exit_code(), 11);
-    assert_eq!(PraxisError::summary_failed("x").exit_code(), 12);
+    assert_eq!(ProserpinaError::no_authed_providers(vec![]).exit_code(), 10);
+    assert_eq!(ProserpinaError::agent_failure("x", "y").exit_code(), 11);
+    assert_eq!(ProserpinaError::summary_failed("x").exit_code(), 12);
     // MissingAgent is 15 (not the 70 fallback).
     assert_eq!(
-        PraxisError::missing_agent(AgentId::new("g")).exit_code(),
+        ProserpinaError::missing_agent(AgentId::new("g")).exit_code(),
         15
     );
 }
@@ -165,15 +165,15 @@ fn exit_code_maps_each_variant_to_a_distinct_value() {
 #[test]
 fn error_kind_is_a_stable_machine_string() {
     assert_eq!(
-        PraxisError::no_authed_providers(vec![]).error_kind(),
+        ProserpinaError::no_authed_providers(vec![]).error_kind(),
         "no_authed_providers"
     );
     assert_eq!(
-        PraxisError::agent_failure("x", "y").error_kind(),
+        ProserpinaError::agent_failure("x", "y").error_kind(),
         "agent_failure"
     );
     assert_eq!(
-        PraxisError::summary_failed("x").error_kind(),
+        ProserpinaError::summary_failed("x").error_kind(),
         "summary_failed"
     );
 }
@@ -181,7 +181,8 @@ fn error_kind_is_a_stable_machine_string() {
 #[test]
 #[cfg(feature = "json")]
 fn to_error_json_carries_kind_message_and_details() {
-    let err = PraxisError::no_authed_providers(vec!["deepseek".to_owned(), "openai".to_owned()]);
+    let err =
+        ProserpinaError::no_authed_providers(vec!["deepseek".to_owned(), "openai".to_owned()]);
     let json = err.to_error_json();
     let parsed: serde_json::Value = serde_json::from_str(&json).expect("valid json");
     assert_eq!(parsed["error"]["kind"], "no_authed_providers");

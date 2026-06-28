@@ -1,6 +1,6 @@
 # Design Overview
 
-Praxis is layered: a pure **engine** (graph + runner + transcript) that knows
+Proserpina is layered: a pure **engine** (graph + runner + transcript) that knows
 nothing about providers, with **backends** (echo, HTTP) implementing an `Agent`
 trait at the edges.
 
@@ -24,7 +24,7 @@ trait at the edges.
 pub trait Agent {
     fn id(&self) -> &AgentId;
     fn persona(&self) -> &Persona;
-    fn respond(&mut self, msg: &Message) -> Result<Message, PraxisError>;
+    fn respond(&mut self, msg: &Message) -> Result<Message, ProserpinaError>;
 }
 ```
 

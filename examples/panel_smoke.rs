@@ -15,8 +15,8 @@
 use std::env;
 use std::path::PathBuf;
 
-use praxis::backend::http::RetryPolicy;
-use praxis::cli::run_critique;
+use proserpina::backend::http::RetryPolicy;
+use proserpina::cli::run_critique;
 
 fn main() {
     let doc = env::args()

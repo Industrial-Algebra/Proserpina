@@ -1,11 +1,11 @@
-# Contributing to Praxis
+# Contributing to Proserpina
 
-Thank you for your interest in contributing! Praxis is an Industrial Algebra
+Thank you for your interest in contributing! Proserpina is an Industrial Algebra
 project, dual-licensed under AGPL v3 and a commercial license.
 
 ## Contributor License Agreement (CLA)
 
-Praxis is dual-licensed (AGPL v3 + commercial). To enable this model, **all
+Proserpina is dual-licensed (AGPL v3 + commercial). To enable this model, **all
 contributors must sign a Contributor License Agreement (CLA)**.
 
 The CLA grants Industrial Algebra the right to relicense your contributions
@@ -25,8 +25,8 @@ Pull requests from contributors who have not signed the CLA cannot be merged.
 ## Development Setup
 
 ```bash
-git clone https://github.com/Industrial-Algebra/Praxis
-cd Praxis
+git clone https://github.com/Industrial-Algebra/Proserpina
+cd Proserpina
 cargo build --all-features
 cargo test --all-features
 ```
@@ -41,7 +41,7 @@ behind the `backend-http` feature.
 - **Test-driven.** Write the failing test first, watch it fail, then implement.
   No implementation code without a failing test.
 - **Never panic in library code.** Every fallible public operation returns
-  `Result<_, PraxisError>`.
+  `Result<_, ProserpinaError>`.
 - **Additive feature gates only.** Features add capability; they never remove
   existing API. Document every feature in `src/lib.rs`.
 - **Every public item is documented**, with `# Examples` / `# Errors` sections.

@@ -12,7 +12,7 @@
 
 #![cfg(feature = "backend-http")]
 
-use praxis::{
+use proserpina::{
     backend::http::{HttpAgent, HttpConfig},
     Agent, AgentId, Message, MessageKind, Persona,
 };

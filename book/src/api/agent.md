@@ -4,7 +4,7 @@
 pub trait Agent {
     fn id(&self) -> &AgentId;
     fn persona(&self) -> &Persona;
-    fn respond(&mut self, msg: &Message) -> Result<Message, PraxisError>;
+    fn respond(&mut self, msg: &Message) -> Result<Message, ProserpinaError>;
 }
 ```
 
@@ -29,6 +29,6 @@ registry by `AgentId`.
 - [`EchoAgent`](./backends.md) — the deterministic reference backend.
 - [`HttpAgent`](./backends.md) — the OpenAI-compatible HTTP backend.
 
-To add a provider Praxis doesn't ship, implement `Agent` (or add a custom
+To add a provider Proserpina doesn't ship, implement `Agent` (or add a custom
 provider section to the [credentials config](./credentials.md), which uses the
 HTTP backend under the hood).

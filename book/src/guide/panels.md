@@ -26,7 +26,7 @@ personas = [
 Each persona is `{ name, framing?, focus? }`. Then:
 
 ```bash
-praxis critique plan.md --panel red-team
+proserpina critique plan.md --panel red-team
 ```
 
 A config-defined panel overrides a same-named built-in (so you can redefine
@@ -43,7 +43,7 @@ report) makes the assignment reproducible.
 ## Discover panels
 
 ```bash
-praxis capabilities | jq '.panels'
+proserpina capabilities | jq '.panels'
 ```
 
 Lists built-in + config-defined panel names.
