@@ -64,9 +64,9 @@ pub struct RetryConfig {
 /// One persona in a config-defined panel.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 pub struct PersonaSpec {
-    name: String,
-    framing: Option<String>,
-    focus: Option<String>,
+    pub name: String,
+    pub framing: Option<String>,
+    pub focus: Option<String>,
 }
 
 impl PersonaSpec {

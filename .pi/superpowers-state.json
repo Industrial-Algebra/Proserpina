@@ -27,9 +27,15 @@
     }
   },
   "tdd": {
-    "phase": "idle",
-    "testFiles": [],
-    "sourceFiles": [],
+    "phase": "red",
+    "testFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/tests/auth_and_cli.rs"
+    ],
+    "sourceFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/http.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs"
+    ],
     "redVerificationPending": false
   },
   "debug": {
