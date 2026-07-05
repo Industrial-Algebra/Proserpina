@@ -28,6 +28,7 @@ fn run_critique_errors_when_no_provider_keys_are_set() {
     ] {
         std::env::remove_var(var);
     }
+    std::env::set_var("PI_HOME", "/nonexistent/pi-test");
 
     let result = run_critique(
         "# Plan\n\nbody",

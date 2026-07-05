@@ -372,7 +372,155 @@ pub fn authed_configs_with(
     let keyring_keys = read_keyring_snapshot(&credentials);
     #[cfg(not(feature = "keyring"))]
     let keyring_keys: HashMap<String, String> = HashMap::new();
-    resolve_configs_with_keyring(Provider::registry(), &credentials, &env_keys, &keyring_keys)
+    let mut configs =
+        resolve_configs_with_keyring(Provider::registry(), &credentials, &env_keys, &keyring_keys)?;
+
+    // Merge in pi's discovered configs (correct per-user URLs/models that the
+    // hardcoded registry may not know). Dedupe by base_url+model.
+    let pi_configs = discover_pi_configs();
+    let existing: std::collections::HashSet<(String, String)> = configs
+        .iter()
+        .map(|c| (c.base_url.clone(), c.model.clone()))
+        .collect();
+    for cfg in pi_configs {
+        let key = (cfg.base_url.clone(), cfg.model.clone());
+        if !existing.contains(&key) {
+            configs.push(cfg);
+        }
+    }
+
+    Ok(configs)
+}
+
+/// Discovers provider configs from pi's `~/.pi/agent/models.json`, if pi is
+/// installed. Returns authed `HttpConfig`s for each provider whose referenced
+/// env var is set.
+///
+/// pi maintains correct per-user provider configs (baseUrl, model, key env-var
+/// ref). Proserpina reads these to avoid maintaining a competing hardcoded
+/// registry that drifts. If pi isn't installed, returns empty.
+///
+/// Also reads pi's `auth.json` — for providers that need a login step (Z.ai,
+/// DashScope, Google), pi stores the actual working API key there. Those keys
+/// are injected into the resolution so they work even when pi isn't running or
+/// hasn't exported the env var.
+pub fn discover_pi_configs() -> Vec<HttpConfig> {
+    // Find pi's config: $PI_HOME/agent/models.json or ~/.pi/agent/models.json
+    let pi_home = std::env::var("PI_HOME")
+        .ok()
+        .or_else(|| std::env::var("HOME").ok().map(|h| format!("{h}/.pi")));
+    let Some(pi_home) = pi_home else {
+        return Vec::new();
+    };
+    let models_path = std::path::Path::new(&pi_home).join("agent/models.json");
+    let Ok(contents) = std::fs::read_to_string(&models_path) else {
+        return Vec::new(); // pi not installed or no models.json
+    };
+    let Ok(parsed): Result<serde_json::Value, _> = serde_json::from_str(&contents) else {
+        return Vec::new(); // malformed — skip silently
+    };
+    let Some(providers) = parsed.get("providers").and_then(|p| p.as_object()) else {
+        return Vec::new();
+    };
+
+    // Read pi's auth.json for login-step keys (Z.ai, DashScope, Google, etc.).
+    // These are the actual working keys that pi's login obtains.
+    let auth_keys = read_pi_auth_keys(&pi_home);
+
+    let mut configs = Vec::new();
+    for (_name, provider) in providers {
+        let base_url = provider.get("baseUrl").and_then(|v| v.as_str());
+        let api_key_ref = provider.get("apiKey").and_then(|v| v.as_str());
+        let models = provider.get("models").and_then(|m| m.as_array());
+        let api = provider.get("api").and_then(|v| v.as_str());
+
+        // Only OpenAI-compatible providers.
+        if api != Some("openai-completions") {
+            continue;
+        }
+
+        let (Some(base_url), Some(api_key_ref), Some(models)) = (base_url, api_key_ref, models)
+        else {
+            continue;
+        };
+
+        // Resolve the key: pi uses "$ENV_VAR" refs.
+        // Priority: auth.json key > env var.
+        let key_var = api_key_ref.strip_prefix('$').unwrap_or(api_key_ref);
+        let api_key = auth_keys
+            .get(key_var)
+            .cloned()
+            .or_else(|| std::env::var(key_var).ok());
+        let Some(api_key) = api_key else {
+            continue; // not authed
+        };
+
+        // Use the first model's id.
+        let model = models
+            .first()
+            .and_then(|m| m.get("id").and_then(|id| id.as_str()))
+            .unwrap_or("default");
+
+        configs.push(HttpConfig {
+            base_url: base_url.to_owned(),
+            model: model.to_owned(),
+            api_key,
+        });
+    }
+    configs
+}
+
+/// Reads pi's `auth.json` and extracts the API keys from `type="api_key"`
+/// entries. Returns a map of env-var-name -> key, so the key resolution can
+/// look them up by the `$ENV_VAR` reference in models.json.
+///
+/// The mapping from auth.json entry name to env var name:
+/// - `dashscope` -> `DASHSCOPE_API_KEY`
+/// - `zai-coding-cn` -> `ZAI_API_KEY` (strip `-coding-cn`, or known mapping)
+/// - `google` -> `GOOGLE_API_KEY`
+///
+/// OAuth entries (`type="oauth"`) are skipped — their access tokens are
+/// time-limited and need pi's runtime to refresh.
+fn read_pi_auth_keys(pi_home: &str) -> HashMap<String, String> {
+    let auth_path = std::path::Path::new(pi_home).join("agent/auth.json");
+    let Ok(contents) = std::fs::read_to_string(&auth_path) else {
+        return HashMap::new();
+    };
+    let Ok(parsed): Result<serde_json::Value, _> = serde_json::from_str(&contents) else {
+        return HashMap::new();
+    };
+    let Some(entries) = parsed.as_object() else {
+        return HashMap::new();
+    };
+
+    let mut out = HashMap::new();
+    for (name, creds) in entries {
+        // Only type="api_key" entries.
+        let cred_type = creds.get("type").and_then(|t| t.as_str());
+        if cred_type != Some("api_key") {
+            continue;
+        }
+        let Some(key) = creds.get("key").and_then(|k| k.as_str()) else {
+            continue;
+        };
+
+        // Map auth.json entry name to env var name.
+        let env_var = auth_entry_to_env_var(name);
+        out.insert(env_var, key.to_owned());
+    }
+    out
+}
+
+/// Maps a pi auth.json entry name to the corresponding env var name.
+/// `dashscope` -> `DASHSCOPE_API_KEY`, `zai-coding-cn` -> `ZAI_API_KEY`, etc.
+fn auth_entry_to_env_var(name: &str) -> String {
+    // Known mappings for pi-specific entry names.
+    let base = match name {
+        "zai-coding-cn" => "zai",
+        "openai-codex" => "openai",
+        other => other,
+    };
+    format!("{}_API_KEY", base.replace('-', "_").to_uppercase())
 }
 
 /// The thin CLI-facing wrapper over [`resolve_configs`]: discovers the

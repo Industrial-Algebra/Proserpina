@@ -291,8 +291,11 @@ fn authed_configs_uses_resolve_over_real_registry_and_env() {
         "PROSERPINA_CONFIG",
         "/nonexistent/proserpina-test-credentials.toml",
     );
+    // Also isolate from pi's models.json/auth.json.
+    std::env::set_var("PI_HOME", "/nonexistent/pi-test-home");
     let configs = authed_configs().expect("empty is not an error");
     std::env::remove_var("PROSERPINA_CONFIG");
+    std::env::remove_var("PI_HOME");
     assert!(
         configs.is_empty(),
         "no keys + no config -> no authed configs"

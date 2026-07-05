@@ -57,7 +57,7 @@ fn capabilities_reports_version_subcommands_formats_and_topologies() {
 
 #[test]
 fn capabilities_provider_list_marks_authed_vs_unauthed() {
-    // With no keys in the env and no config, no registry provider is authed.
+    // With no keys in the env, no config, and no pi, no provider is authed.
     for var in [
         "DEEPSEEK_API_KEY",
         "OPENAI_API_KEY",
@@ -65,12 +65,15 @@ fn capabilities_provider_list_marks_authed_vs_unauthed() {
         "DASHSCOPE_API_KEY",
         "ZAI_API_KEY",
         "GOOGLE_API_KEY",
+        "INCEPTION_API_KEY",
     ] {
         std::env::remove_var(var);
     }
     std::env::set_var("PROSERPINA_CONFIG", "/nonexistent/proserpina-test-cap.toml");
+    std::env::set_var("PI_HOME", "/nonexistent/pi-test-home");
     let caps = Capabilities::with_current_auth();
     std::env::remove_var("PROSERPINA_CONFIG");
+    std::env::remove_var("PI_HOME");
 
     // Six registry providers reported.
     assert!(caps.providers.len() >= 6, "registry providers present");

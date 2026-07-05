@@ -24,6 +24,7 @@ fn run_critique_with_json_errors_cleanly_when_no_keys_set() {
     ] {
         std::env::remove_var(var);
     }
+    std::env::set_var("PI_HOME", "/nonexistent/pi-test");
     let result = run_critique(
         "# Plan\n\nbody",
         "plan.md",
@@ -35,4 +36,5 @@ fn run_critique_with_json_errors_cleanly_when_no_keys_set() {
         None,
     );
     assert!(result.is_err());
+    std::env::remove_var("PI_HOME");
 }
