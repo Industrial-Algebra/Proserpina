@@ -69,7 +69,10 @@ fn capabilities_provider_list_marks_authed_vs_unauthed() {
     ] {
         std::env::remove_var(var);
     }
-    std::env::set_var("PROSERPINA_CONFIG", "/nonexistent/proserpina-test-cap.toml");
+    // Use a temp file as the config so it exists but is empty.
+    let temp_config = tempfile::NamedTempFile::new().expect("tempfile");
+    std::fs::write(temp_config.path(), "# empty\n").expect("write");
+    std::env::set_var("PROSERPINA_CONFIG", temp_config.path());
     std::env::set_var("PI_HOME", "/nonexistent/pi-test-home");
     let caps = Capabilities::with_current_auth();
     std::env::remove_var("PROSERPINA_CONFIG");

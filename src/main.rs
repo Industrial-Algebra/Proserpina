@@ -105,6 +105,17 @@ enum AuthAction {
         #[arg(long)]
         config: Option<PathBuf>,
     },
+    /// Interactively authenticate with a provider (acquire + store a credential).
+    Login {
+        /// Provider name (e.g. deepseek, openai, zai). If omitted, shows a
+        /// selector.
+        provider: Option<String>,
+    },
+    /// Remove stored credentials for a provider.
+    Logout {
+        /// Provider name to remove.
+        provider: String,
+    },
 }
 
 fn main() -> ExitCode {
@@ -155,6 +166,8 @@ fn main() -> ExitCode {
         Command::Auth { action } => match action.unwrap_or(AuthAction::Check { config: None }) {
             AuthAction::Check { config } => cmd_auth_check(config.as_deref()),
             AuthAction::List { config } => cmd_auth_list(config.as_deref()),
+            AuthAction::Login { provider } => cmd_auth_login(provider.as_deref()),
+            AuthAction::Logout { provider } => cmd_auth_logout(&provider),
         },
         Command::Panels { config } => cmd_panels(config.as_deref()),
     }
@@ -319,6 +332,120 @@ fn cmd_panels(config: Option<&std::path::Path>) -> ExitCode {
     }
     println!("\nUse `--panel <name>` with `proserpina critique`.");
     ExitCode::SUCCESS
+}
+
+#[cfg(all(feature = "cli", feature = "backend-http"))]
+fn cmd_auth_login(provider: Option<&str>) -> ExitCode {
+    use proserpina::auth::api_key::run_api_key_flow;
+    use proserpina::auth::tui_ratatui::RatatuiAuthUi;
+    use proserpina::auth::{auth_registry, find_provider_auth, AuthStore, AuthUi};
+
+    let ui = RatatuiAuthUi;
+
+    // Determine which provider to authenticate.
+    let provider_auth = if let Some(name) = provider {
+        match find_provider_auth(name) {
+            Some(p) => p,
+            None => {
+                ui.show_error(&format!("Unknown provider: {name}"));
+                ui.show_error(&format!(
+                    "Available: {}",
+                    auth_registry()
+                        .iter()
+                        .map(|p| p.name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
+                return ExitCode::FAILURE;
+            }
+        }
+    } else {
+        // Show provider selector.
+        let registry = auth_registry();
+        match ui.select_provider(registry) {
+            Some(idx) => &registry[idx],
+            None => {
+                ui.show_status("Cancelled.");
+                return ExitCode::SUCCESS;
+            }
+        }
+    };
+
+    // Run the appropriate auth flow.
+    let key = match &provider_auth.method {
+        proserpina::auth::AuthMethod::ApiKey { .. } => match run_api_key_flow(&ui, provider_auth) {
+            Ok(k) => k,
+            Err(e) => {
+                ui.show_error(&format!("Auth failed: {e}"));
+                return ExitCode::FAILURE;
+            }
+        },
+        #[cfg(feature = "cli")]
+        proserpina::auth::AuthMethod::OAuth {
+            client_id,
+            authorize_url,
+            token_url,
+            scope,
+        } => {
+            ui.show_error("OAuth flow not yet implemented in this build.");
+            let _ = (client_id, authorize_url, token_url, scope);
+            return ExitCode::FAILURE;
+        }
+    };
+
+    // Store the credential.
+    let mut store = match AuthStore::discover() {
+        Ok(s) => s,
+        Err(e) => {
+            ui.show_error(&format!("Failed to open credential store: {e}"));
+            return ExitCode::FAILURE;
+        }
+    };
+
+    if let Err(e) = store.store_api_key(provider_auth.name, &key) {
+        ui.show_error(&format!("Failed to store credential: {e}"));
+        return ExitCode::FAILURE;
+    }
+
+    ui.show_success(&format!(
+        "{} authenticated. Key stored.",
+        provider_auth.name
+    ));
+    ExitCode::SUCCESS
+}
+
+#[cfg(not(all(feature = "cli", feature = "backend-http")))]
+fn cmd_auth_login(_provider: Option<&str>) -> ExitCode {
+    eprintln!("Built without `backend-http`; no auth available.");
+    ExitCode::FAILURE
+}
+
+#[cfg(all(feature = "cli", feature = "backend-http"))]
+fn cmd_auth_logout(provider: &str) -> ExitCode {
+    use proserpina::auth::AuthStore;
+    let mut store = match AuthStore::discover() {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to open credential store: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    match store.remove(provider) {
+        Ok(()) => {
+            println!("✓ Removed credentials for {provider}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("✗ Failed: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+#[cfg(not(all(feature = "cli", feature = "backend-http")))]
+fn cmd_auth_logout(_provider: &str) -> ExitCode {
+    eprintln!("Built without `backend-http`.");
+    ExitCode::FAILURE
 }
 
 /// Emits an error appropriately: structured JSON on stderr if `--json`, else

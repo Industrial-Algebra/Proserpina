@@ -29,6 +29,9 @@ fn run_critique_errors_when_no_provider_keys_are_set() {
         std::env::remove_var(var);
     }
     std::env::set_var("PI_HOME", "/nonexistent/pi-test");
+    let temp_config = tempfile::NamedTempFile::new().expect("tempfile");
+    std::fs::write(temp_config.path(), "# empty\n").expect("write");
+    std::env::set_var("PROSERPINA_CONFIG", temp_config.path());
 
     let result = run_critique(
         "# Plan\n\nbody",
