@@ -5,6 +5,19 @@ All notable changes to Proserpina are documented here. The format is based on
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.2.1] — 2026-06-28
+
+### Fixed
+
+- **Graceful provider degradation**: when a critic's provider fails mid-run
+  (bad key, rate limit, timeout), Proserpina now tries reassigning to another
+  authed provider, and if all fail for that persona, skips the critic and
+  continues with the rest. Previously, a single provider failure killed the
+  entire run. Skipped critics are noted in the report.
+
+[0.2.1]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.2.1
+
+
 ## [0.2.0] — 2026-06-28
 
 ### Changed — Licensing

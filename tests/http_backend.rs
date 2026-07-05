@@ -25,7 +25,7 @@ fn render_prompt_emits_system_message_from_persona() {
         "Critique this roadmap.",
     );
 
-    let prompt = render_prompt(&persona, &incoming);
+    let prompt = render_prompt(&persona, &incoming, None);
 
     // The first message is always the system message, carrying the persona.
     assert_eq!(prompt[0].role, "system");
@@ -46,7 +46,7 @@ fn render_prompt_carries_incoming_message_kind_and_text_as_user_turn() {
         "Your assumption is unsupported.",
     );
 
-    let prompt = render_prompt(&persona, &incoming);
+    let prompt = render_prompt(&persona, &incoming, None);
 
     // A user turn carries the incoming message, including its kind so the
     // model knows whether it is being prompted or rebutted.
@@ -65,14 +65,14 @@ fn render_prompt_instructs_the_model_to_respond_with_a_message_kind() {
     // expected reply kind is Critique; for a Critique it is Rebuttal.
     let persona = Persona::new("Devil's Advocate");
     let prompt_in = Message::new(AgentId::new("system"), None, MessageKind::Prompt, "doc");
-    let rendered_for_prompt = render_prompt(&persona, &prompt_in);
+    let rendered_for_prompt = render_prompt(&persona, &prompt_in, None);
     assert!(rendered_for_prompt.iter().any(|m| m
         .content
         .to_lowercase()
         .contains("respond with kind: critique")));
 
     let critique_in = Message::new(AgentId::new("c"), None, MessageKind::Critique, "claim");
-    let rendered_for_critique = render_prompt(&persona, &critique_in);
+    let rendered_for_critique = render_prompt(&persona, &critique_in, None);
     assert!(rendered_for_critique.iter().any(|m| m
         .content
         .to_lowercase()

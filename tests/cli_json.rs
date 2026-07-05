@@ -32,6 +32,7 @@ fn run_critique_with_json_errors_cleanly_when_no_keys_set() {
         true,
         None,
         proserpina::backend::http::RetryPolicy::NONE,
+        None,
     );
     assert!(result.is_err());
 }

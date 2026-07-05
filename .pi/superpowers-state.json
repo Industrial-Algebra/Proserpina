@@ -29,9 +29,7 @@
   "tdd": {
     "phase": "idle",
     "testFiles": [],
-    "sourceFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/src/cli/critique.rs"
-    ],
+    "sourceFiles": [],
     "redVerificationPending": false
   },
   "debug": {
