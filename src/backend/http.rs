@@ -325,7 +325,11 @@ fn expected_reply_kind(incoming: MessageKind) -> MessageKind {
 /// followed by a user turn carrying the incoming message — its kind, sender,
 /// and text — and an instruction to reply with the expected kind so the
 /// backend can map the response back to a [`MessageKind`].
-pub fn render_prompt(persona: &Persona, incoming: &Message) -> Vec<ChatMessage> {
+pub fn render_prompt(
+    persona: &Persona,
+    incoming: &Message,
+    language: Option<&str>,
+) -> Vec<ChatMessage> {
     let mut system = format!(
         "You are {}, a critic on a peer-review panel.",
         persona.name()
@@ -335,6 +339,9 @@ pub fn render_prompt(persona: &Persona, incoming: &Message) -> Vec<ChatMessage> 
     }
     if let Some(focus) = persona.focus() {
         system.push_str(&format!(" Focus: {focus}."));
+    }
+    if let Some(lang) = language {
+        system.push_str(&format!(" Respond in {lang}."));
     }
 
     let reply_kind = expected_reply_kind(incoming.kind());
@@ -431,6 +438,7 @@ pub struct HttpAgent {
     runtime: tokio::runtime::Runtime,
     client: reqwest::Client,
     policy: RetryPolicy,
+    language: Option<String>,
 }
 
 impl HttpAgent {
@@ -465,7 +473,15 @@ impl HttpAgent {
                 .expect("proserpina: failed to build tokio runtime for HttpAgent"),
             client,
             policy,
+            language: None,
         }
+    }
+
+    /// Sets the output language for this agent's responses.
+    #[must_use]
+    pub fn with_language(mut self, language: impl Into<String>) -> Self {
+        self.language = Some(language.into());
+        self
     }
 
     /// The label used in failure messages: persona (model), so a multi-provider
@@ -477,7 +493,7 @@ impl HttpAgent {
     /// The async inner: render, POST (with retry/backoff), return the raw
     /// response body. Delegates to [`send_chat_completion`].
     async fn fetch_response(&self, incoming: &Message) -> Result<String, crate::ProserpinaError> {
-        let messages = render_prompt(&self.persona, incoming);
+        let messages = render_prompt(&self.persona, incoming, self.language.as_deref());
         let body = build_request_body(&self.config.model, &messages);
         let url = format!(
             "{}/chat/completions",

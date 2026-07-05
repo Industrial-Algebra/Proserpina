@@ -63,6 +63,10 @@ enum Command {
         /// Override the retry policy's per-attempt timeout in seconds.
         #[arg(long)]
         timeout: Option<u64>,
+        /// Output language for critiques and findings (e.g. "Japanese", "français").
+        /// If omitted, the model chooses based on the document.
+        #[arg(long)]
+        language: Option<String>,
     },
 
     /// Show capabilities: version, providers (and which are authed), panels,
@@ -118,6 +122,7 @@ fn main() -> ExitCode {
             panel,
             max_attempts,
             timeout,
+            language,
         } => match run_critique_cmd(
             &input,
             echo,
@@ -128,6 +133,7 @@ fn main() -> ExitCode {
             panel.as_deref(),
             max_attempts,
             timeout,
+            language.as_deref(),
         ) {
             Ok(output) => {
                 match out {
@@ -351,6 +357,7 @@ fn run_critique_cmd(
     panel: Option<&str>,
     max_attempts: Option<u32>,
     timeout: Option<u64>,
+    language: Option<&str>,
 ) -> Result<String, proserpina::ProserpinaError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input).map_err(|e| {
@@ -379,12 +386,21 @@ fn run_critique_cmd(
             eprintln!("Proserpina v0.2.1 — panel: {panel_name}\n");
         }
 
-        proserpina::cli::run_critique(&text, &source, seed, config, json, panel, policy)
+        proserpina::cli::run_critique(&text, &source, seed, config, json, panel, policy, language)
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
-        let _ = (seed, config, json, dry_run, panel, max_attempts, timeout);
+        let _ = (
+            seed,
+            config,
+            json,
+            dry_run,
+            panel,
+            max_attempts,
+            timeout,
+            language,
+        );
         let mut report = proserpina::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)

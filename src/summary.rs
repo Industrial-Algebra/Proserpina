@@ -134,8 +134,13 @@ fn parse_severity(value: &str) -> Severity {
 /// The system message instructs the model to group critiques into distinct
 /// issues and emit a fenced `proserpina-finding` block per issue. The user message
 /// carries the subject text and the transcript turns.
-pub fn render_summary_prompt(subject: &Subject, transcript: &Transcript) -> Vec<SummaryMessage> {
-    let system = "You are summarizing a multi-critic peer review. Group the \
+pub fn render_summary_prompt(
+    subject: &Subject,
+    transcript: &Transcript,
+    language: Option<&str>,
+) -> Vec<SummaryMessage> {
+    let mut system = String::from(
+        "You are summarizing a multi-critic peer review. Group the \
 critiques into distinct issues. Emit ONE fenced code block per issue, tagged \
 ```proserpina-finding```, with these fields (one per line, `key: value`):\n\
 severity: (info|minor|major|blocker)\n\
@@ -147,7 +152,12 @@ suggested_change: (an actionable recommended change)\n\
 supporting_critics: (comma-separated critic names)\n\n\
 All fields except `severity` and `summary` are optional. Cluster issues that \
 multiple critics raised; list them in supporting_critics. Do not emit prose \
-outside the blocks.";
+outside the blocks.",
+    );
+    if let Some(lang) = language {
+        system.push_str(&format!(" Respond in {lang}."));
+    }
+    let system = system.as_str();
 
     let mut user = String::new();
     user.push_str("# Document under critique\n\n");
@@ -208,10 +218,11 @@ pub fn summarize(
     transcript: &Transcript,
     config: &HttpConfig,
     policy: &crate::backend::http::RetryPolicy,
+    language: Option<&str>,
 ) -> Result<Vec<Finding>, ProserpinaError> {
     use crate::backend::http::send_chat_completion;
 
-    let messages = render_summary_prompt(subject, transcript);
+    let messages = render_summary_prompt(subject, transcript, language);
     let body = serde_json::json!({
         "model": config.model,
         "messages": messages,

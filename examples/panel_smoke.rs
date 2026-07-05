@@ -32,7 +32,7 @@ fn main() {
         None,
         false,         // markdown (not json)
         Some("panel"), // 5-critic panel
-        RetryPolicy::DEFAULT,
+        RetryPolicy::DEFAULT, None,
     )
     .expect("run should succeed");
 

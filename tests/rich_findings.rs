@@ -152,7 +152,7 @@ fn render_summary_prompt_includes_subject_and_transcript_turns() {
         "No timeline.",
     ));
 
-    let prompt = render_summary_prompt(&subject, &transcript);
+    let prompt = render_summary_prompt(&subject, &transcript, None);
 
     // System message instructs the model to emit proserpina-finding blocks.
     assert_eq!(prompt[0].role, "system");
@@ -202,6 +202,7 @@ fn live_deepseek_summary_produces_structured_findings() {
         &transcript,
         &config,
         &proserpina::backend::http::RetryPolicy::DEFAULT,
+        None,
     )
     .expect("live summarizer call should succeed");
     assert!(!findings.is_empty(), "summarizer should produce findings");
