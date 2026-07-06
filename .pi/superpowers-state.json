@@ -35,12 +35,19 @@
       "/home/lucien/working/industrial-algebra/Praxis/tests/credentials.rs"
     ],
     "sourceFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs"
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/mod.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/api_key.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/store.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/oauth.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/tui_ratatui.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/lib.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs"
     ],
     "redVerificationPending": true
   },
   "debug": {
-    "active": false,
+    "active": true,
     "investigated": true,
     "fixAttempts": 0
   },

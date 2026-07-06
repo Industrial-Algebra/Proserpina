@@ -286,11 +286,10 @@ fn authed_configs_uses_resolve_over_real_registry_and_env() {
     ] {
         std::env::remove_var(var);
     }
-    // Point discovery at a nonexistent file so no real config interferes.
-    std::env::set_var(
-        "PROSERPINA_CONFIG",
-        "/nonexistent/proserpina-test-credentials.toml",
-    );
+    // Use a temp empty config file so real credentials don't leak in.
+    let temp_config = tempfile::NamedTempFile::new().expect("tempfile");
+    std::fs::write(temp_config.path(), "# empty\n").expect("write");
+    std::env::set_var("PROSERPINA_CONFIG", temp_config.path());
     // Also isolate from pi's models.json/auth.json.
     std::env::set_var("PI_HOME", "/nonexistent/pi-test-home");
     let configs = authed_configs().expect("empty is not an error");
