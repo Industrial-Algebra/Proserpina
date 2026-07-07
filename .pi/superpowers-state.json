@@ -27,10 +27,12 @@
     }
   },
   "tdd": {
-    "phase": "idle",
-    "testFiles": [],
+    "phase": "red-pending",
+    "testFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/tests/retry.rs"
+    ],
     "sourceFiles": [],
-    "redVerificationPending": false
+    "redVerificationPending": true
   },
   "debug": {
     "active": false,
