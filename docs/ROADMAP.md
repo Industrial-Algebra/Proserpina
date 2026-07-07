@@ -20,7 +20,13 @@ frontier providers (DeepSeek, Z.ai GLM, OpenAI, Moonshot, Alibaba, Google) plus
 any custom OpenAI-compatible endpoint. 136 tests, zero warnings across all
 feature combinations, `cargo publish --dry-run` clean.
 
-**Completed for v0.1.0:**
+**Completed for v0.3.0:**
+- ✅ **Auth subsystem**: `proserpina auth login <provider>` (interactive API key + OAuth PKCE), `auth check`, `auth list`, `auth logout`. Token storage + auto-refresh lifecycle.
+- ✅ **Pi provider discovery**: auto-reads pi's models.json + auth.json (convenience layer).
+- ✅ **`--language` flag**: output in any supported language.
+- ✅ **Human-readable CLI**: capabilities table, progress output, actionable errors.
+
+**Completed for v0.1.0–v0.2.1:**
 - ✅ Interaction-graph engine (`parallel`, `rounds`) with convergence early-stop
 - ✅ Provider-agnostic `Agent` trait; echo + HTTP backends
 - ✅ Multi-provider roster (seeded, reproducible) + standalone credentials config
@@ -73,8 +79,10 @@ is committed to a version.
   workaround more loudly).
 - **Credentials file permissions check** — warn if world-readable.
 - **Ollama as a first-class preset** — common local-LLM case.
-- **`proserpina auth` CLI flow** — interactive `proserpina auth set <provider>` that
-  writes the keychain, so users don't have to use a separate tool.
+- **Full ratatui TUI** — the auth login UI is currently stdin-based; a proper
+  ratatui list widget is planned (behind the AuthUi trait seam for Knopper
+  migration).
+- **Device-code flow** — for headless machines without a browser.
 
 ---
 

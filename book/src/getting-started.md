@@ -16,16 +16,25 @@ cargo install --path . --features cli,backend-http,json
 
 ## Authenticate one provider
 
-The zero-config path: export a DeepSeek key.
+The zero-config path: log in interactively.
 
 ```bash
-export DEEPSEEK_API_KEY=sk-...
+proserpina auth login deepseek
 ```
 
-(Any of `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, `MOONSHOT_API_KEY`,
-`DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `GOOGLE_API_KEY` works. For providers pi
-mediates via OAuth/extensions, put the key in
-[~/.config/proserpina/credentials.toml](./providers.md) instead.)
+This prompts for your API key, validates it, and stores it in
+`~/.config/proserpina/credentials.toml` (or the OS keychain if the `keyring`
+feature is on).
+
+For OpenAI (ChatGPT), an OAuth browser flow is used:
+
+```bash
+proserpina auth login openai
+```
+
+Or set an env var directly (any of `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`,
+`MOONSHOT_API_KEY`, `DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `GOOGLE_API_KEY`
+works). If pi is installed, Proserpina auto-discovers pi's provider configs.
 
 ## Critique a document
 

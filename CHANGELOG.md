@@ -18,7 +18,51 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 [0.2.1]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.2.1
 
 
-## [0.2.0] — 2026-06-28
+## [0.3.0] — Unreleased
+
+### Added — Auth Subsystem
+
+- **`proserpina auth login <provider>`**: interactive credential acquisition.
+  API-key providers (DeepSeek, Z.ai, DashScope, Google, Moonshot) prompt for
+  a key, validate it via GET /models, and store it. OpenAI uses an OAuth PKCE
+  browser flow (same client_id as OpenAI's Codex CLI).
+- **`proserpina auth login`** (no provider): provider selector with auth
+  methods shown.
+- **`proserpina auth logout <provider>`**: removes stored credentials.
+- **OAuth token lifecycle**: tokens stored with structured fields
+  (access/refresh/expires); expired tokens auto-refreshed before each run.
+- **AuthUi trait seam**: the auth UI is trait-isolated — ratatui now, Knopper
+  later (zero logic changes to swap).
+
+### Added — Pi Provider Discovery
+
+- Auto-discovers pi's `models.json` + `auth.json` for correct per-user provider
+  configs (URLs, models, keys). Solves the "key-exists ≠ key-valid" problem for
+  pi-managed providers. Convenience layer; `auth login` credentials take
+  precedence.
+
+### Added — Language Flag
+
+- **`--language <lang>`**: critics and summarizer respond in the specified
+  language (e.g. `--language Japanese`, `--language français`). Default: model
+  chooses based on the document.
+
+### Added — Human-Readable CLI (from v0.2.x)
+
+- `capabilities` defaults to human-readable table (not JSON); `--json` for agents.
+- Progress output during `critique` runs (stderr).
+- Actionable error messages (401 → "run proserpina auth check").
+- New subcommands: `auth check/list`, `panels`.
+
+### Added — Graceful Provider Degradation
+
+- If a provider fails mid-run, Proserpina tries reassigning the critic to
+  another authed provider, or skips it and continues. A single bad key no longer
+  kills the whole run.
+
+[0.3.0]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.3.0
+
+
 
 ### Changed — Licensing
 

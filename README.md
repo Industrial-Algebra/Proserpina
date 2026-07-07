@@ -47,10 +47,10 @@ Moonshot, Alibaba, and Google. The summarizer then tells you where the panel
 ## Quick start
 
 ```bash
-cargo install proserpina
+cargo install proserpina --features cli,backend-http,json
 
-# Set one provider key (DeepSeek is the zero-config default)...
-export DEEPSEEK_API_KEY=sk-...
+# Authenticate with a provider (interactive)...
+proserpina auth login deepseek
 
 # ...and cross-examine a document.
 proserpina critique roadmap.md
@@ -121,6 +121,16 @@ supply `base_url` + `model` + `api_key` in a section whose name isn't a built-in
 
 Define your own under `[panels.NAME]` (above). `--panel <name>` selects one.
 
+## Language
+
+Critique in any language the models support:
+
+```bash
+proserpina critique doc.md --panel panel --language Japanese
+```
+
+Omitting `--language` lets the model infer from the document's language.
+
 ## Agent integration
 
 Proserpina is designed to be called on the fly by AI agents across your dev
@@ -129,6 +139,8 @@ environments. The full loop:
 | Move | Command |
 |---|---|
 | What can you do, right now? | `proserpina capabilities` |
+| Authenticate a provider | `proserpina auth login <provider>` |
+| Validate keys | `proserpina auth check` |
 | What would this run do / cost? | `proserpina critique doc.md --dry-run --seed N` |
 | Do it (structured) | `proserpina critique doc.md --json` |
 | What went wrong? | structured JSON on stderr + exit code |

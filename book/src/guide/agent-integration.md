@@ -7,6 +7,8 @@ environments. The full loop:
 |---|---|
 | What can you do, right now? | `proserpina capabilities` |
 | What would this run do / cost? | `proserpina critique doc.md --dry-run --seed N` |
+| Authenticate a provider | `proserpina auth login <provider>` |
+| Validate keys | `proserpina auth check` |
 | Do it (structured) | `proserpina critique doc.md --json` |
 | What went wrong? | structured JSON on stderr + exit code |
 

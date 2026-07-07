@@ -45,29 +45,27 @@ frontier models when compute allows; until then, Proserpina supports both paths.
   see the document. Check `proserpina capabilities` to see which providers are
   authed before a multi-critic run on sensitive content.
 
-## Credential storage — API keys
+## Credential storage
 
-Proserpina resolves each provider's API key with precedence
-**keyring > env var > config file > registry default** (keyring is opt-in via
-the `keyring` feature):
+Proserpina resolves each provider's credential with precedence
+**OAuth access token > keyring > env var > config file > pi discovery > none**.
 
-1. **OS keychain** (`keyring` feature) — the most secure tier. Entries are
-   looked up as `proserpina:<KEY_ENV_VAR>` (e.g. `proserpina:DEEPSEEK_API_KEY`).
-   Supported on **macOS Keychain** and **Windows Credential Manager**.
-   *Known limitation:* on **Linux with gnome-keyring**, the `keyring` crate's
-   default backend may silently fail to persist entries (write succeeds, read
-   returns `NoEntry`). Linux users should use env vars or the config file
-   until the backend is stabilized; see
-   [ROADMAP](https://github.com/Industrial-Algebra/Proserpina/blob/main/docs/ROADMAP.md).
-2. **Environment variables** — the registry declares each provider's var
-   (`DEEPSEEK_API_KEY`, etc.). Easiest; ephemeral; not persisted to disk.
-3. **Config file** (`~/.config/proserpina/credentials.toml`) — **plaintext** on
-   disk. File permissions are your responsibility; Proserpina does not warn if the
-   file is world-readable.
+Three ways to authenticate (from most to least convenient):
+
+1. **`proserpina auth login <provider>`** — interactive prompt (API key) or
+   OAuth browser flow (OpenAI). Validates before storing. Stores in
+   credentials.toml or the OS keychain (if `keyring` feature is on).
+2. **OS keychain** (`keyring` feature) — `proserpina auth login` stores keys
+   in the OS keychain when available (macOS Keychain, Windows Credential
+   Manager). Linux gnome-keyring has a known limitation.
+3. **Environment variables** — ephemeral, not persisted.
+4. **Config file** (`~/.config/proserpina/credentials.toml`) — **plaintext**.
+   File permissions are your responsibility. OAuth tokens (too large for
+   keychain) go here regardless.
 
 The config file is the right place for **non-secret** provider config
-(`base_url`/`model` overrides, `[panels]`, `[retry]`) regardless of where keys
-live; secrets should prefer the keychain (macOS/Windows) or env vars.
+(`base_url`/`model` overrides, `[panels]`, `[retry]`) regardless of where
+keys live.
 
 ## Trust boundary — model output is untrusted
 
