@@ -430,18 +430,18 @@ pub fn authed_configs_with(
         resolve_configs_with_keyring(Provider::registry(), &credentials, &env_keys, &keyring_keys)?;
 
     // Merge in pi's discovered configs (correct per-user URLs/models that the
-    // hardcoded registry may not know). Dedupe by base_url+model.
+    // hardcoded registry may not know). Dedupe by provider host: when a pi
+    // config has the same host as a registry config, the pi config REPLACES
+    // the registry one (pi has the user's actual current model + URL).
     let pi_configs = discover_pi_configs();
-    let existing: std::collections::HashSet<(String, String)> = configs
+    let pi_hosts: std::collections::HashSet<String> = pi_configs
         .iter()
-        .map(|c| (c.base_url.clone(), c.model.clone()))
+        .map(|c| extract_host(&c.base_url))
         .collect();
-    for cfg in pi_configs {
-        let key = (cfg.base_url.clone(), cfg.model.clone());
-        if !existing.contains(&key) {
-            configs.push(cfg);
-        }
-    }
+    // Remove registry configs whose host is also served by a pi config.
+    configs.retain(|c| !pi_hosts.contains(&extract_host(&c.base_url)));
+    // Add all pi configs.
+    configs.extend(pi_configs);
 
     Ok(configs)
 }
@@ -563,6 +563,19 @@ fn read_pi_auth_keys(pi_home: &str) -> HashMap<String, String> {
         out.insert(env_var, key.to_owned());
     }
     out
+}
+
+/// Extracts the hostname from a base_url for provider-dedup purposes.
+/// `https://api.deepseek.com/v1` → `api.deepseek.com`
+/// `https://api.deepseek.com` → `api.deepseek.com`
+fn extract_host(url: &str) -> String {
+    let no_scheme = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url);
+    let no_port = no_scheme.split(':').next().unwrap_or(no_scheme);
+    let no_path = no_port.split('/').next().unwrap_or(no_port);
+    no_path.to_owned()
 }
 
 /// Maps a pi auth.json entry name to the corresponding env var name.
