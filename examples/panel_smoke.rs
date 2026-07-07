@@ -34,6 +34,7 @@ fn main() {
         Some("panel"), // 5-critic panel
         RetryPolicy::DEFAULT,
         None,
+        &[],
     )
     .expect("run should succeed");
 

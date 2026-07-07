@@ -84,8 +84,9 @@ pub fn run_critique(
     panel: Option<&str>,
     policy: crate::backend::http::RetryPolicy,
     language: Option<&str>,
+    excludes: &[String],
 ) -> Result<String, ProserpinaError> {
-    use crate::backend::credentials::{authed_configs_with, Credentials};
+    use crate::backend::credentials::{authed_configs_with_excludes, Credentials};
     use crate::backend::http::HttpAgent;
     use crate::backend::roster::{random_roster, Provider};
     use crate::persona::resolve_panel;
@@ -94,7 +95,7 @@ pub fn run_critique(
 
     let credentials = Credentials::discover_or(config_path)?;
     let personas = resolve_panel(panel.unwrap_or("default"), &credentials)?;
-    let configs = authed_configs_with(config_path)?;
+    let configs = authed_configs_with_excludes(config_path, excludes)?;
     if configs.is_empty() {
         return Err(ProserpinaError::no_authed_providers(
             Provider::registry()
@@ -231,14 +232,15 @@ pub fn plan_critique(
     config_path: Option<&std::path::Path>,
     _json: bool,
     panel: Option<&str>,
+    excludes: &[String],
 ) -> Result<String, ProserpinaError> {
     use crate::agent_info::Plan;
-    use crate::backend::credentials::{authed_configs_with, Credentials};
+    use crate::backend::credentials::{authed_configs_with_excludes, Credentials};
     use crate::backend::roster::Provider;
     use crate::persona::resolve_panel;
 
     let credentials = Credentials::discover_or(config_path)?;
-    let configs = authed_configs_with(config_path)?;
+    let configs = authed_configs_with_excludes(config_path, excludes)?;
     if configs.is_empty() {
         return Err(ProserpinaError::no_authed_providers(
             Provider::registry()

@@ -15,6 +15,7 @@ flow for OpenAI), validates them, and stores them:
 ```bash
 proserpina auth login deepseek    # API key prompt → validate → store
 proserpina auth login openai      # OAuth browser flow → token exchange → store
+proserpina auth login openai --model gpt-5.5  # also pin a specific model
 proserpina auth login             # provider selector
 ```
 
@@ -64,7 +65,7 @@ in pi work in Proserpina without separate setup. This is a convenience layer;
 | Provider | Base URL | Default model | Auth method |
 |---|---|---|---|
 | deepseek | `api.deepseek.com` | `deepseek-chat` | API key |
-| openai | `api.openai.com/v1` | `gpt-4o` | OAuth (ChatGPT) |
+| openai | `api.openai.com/v1` | `gpt-5.4` | OAuth (ChatGPT) |
 | zai | `api.z.ai/api/coding/paas/v4` | `glm-5.2` | API key |
 | dashscope | `dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` | API key |
 | google | `generativelanguage.googleapis.com/v1beta/openai` | `gemini-1.5-pro` | API key |
@@ -97,6 +98,41 @@ base_url = "http://localhost:11434/v1"
 model = "llama3"
 api_key = "ollama"
 ```
+
+## Excluding providers
+
+To disable a provider from the roster (e.g. billing lapsed, model retired):
+
+```toml
+# In credentials.toml — excludes by model name
+exclude = ["qwen3.7-max", "mercury-2"]
+```
+
+Or per-run via CLI:
+
+```bash
+proserpina critique doc.md --exclude qwen3.7-max,mercury-2
+```
+
+Both config-level and CLI-level excludes are applied (union).
+
+## Overriding the model
+
+The registry has sensible defaults, but you can pin any provider's model:
+
+```toml
+# In credentials.toml
+[openai]
+model = "gpt-5.5"
+```
+
+Or at login time:
+
+```bash
+proserpina auth login openai --model gpt-5.5
+```
+
+The override is stored in `credentials.toml` and used for all subsequent runs.
 
 ## See what's authed
 

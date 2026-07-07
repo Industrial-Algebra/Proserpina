@@ -27,12 +27,20 @@
     }
   },
   "tdd": {
-    "phase": "idle",
-    "testFiles": [],
-    "sourceFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs"
+    "phase": "red-pending",
+    "testFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/tests/cli_json.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/tests/cli_roster.rs"
     ],
-    "redVerificationPending": false
+    "sourceFiles": [
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/roster.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/cli/critique.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/store.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/examples/panel_smoke.rs"
+    ],
+    "redVerificationPending": true
   },
   "debug": {
     "active": false,

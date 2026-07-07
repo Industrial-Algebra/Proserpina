@@ -67,6 +67,11 @@ enum Command {
         /// If omitted, the model chooses based on the document.
         #[arg(long)]
         language: Option<String>,
+        /// Comma-separated model names to exclude from the provider pool
+        /// (e.g. `--exclude qwen3.7-max,mercury-2`). Also settable via
+        /// `exclude = [...]` in credentials.toml.
+        #[arg(long)]
+        exclude: Option<String>,
     },
 
     /// Show capabilities: version, providers (and which are authed), panels,
@@ -110,6 +115,10 @@ enum AuthAction {
         /// Provider name (e.g. deepseek, openai, zai). If omitted, shows a
         /// selector.
         provider: Option<String>,
+        /// Override the default model for this provider (stored in
+        /// credentials.toml). E.g. `--model gpt-5.5`.
+        #[arg(long)]
+        model: Option<String>,
     },
     /// Remove stored credentials for a provider.
     Logout {
@@ -134,6 +143,7 @@ fn main() -> ExitCode {
             max_attempts,
             timeout,
             language,
+            exclude,
         } => match run_critique_cmd(
             &input,
             echo,
@@ -145,6 +155,7 @@ fn main() -> ExitCode {
             max_attempts,
             timeout,
             language.as_deref(),
+            exclude.as_deref(),
         ) {
             Ok(output) => {
                 match out {
@@ -166,7 +177,9 @@ fn main() -> ExitCode {
         Command::Auth { action } => match action.unwrap_or(AuthAction::Check { config: None }) {
             AuthAction::Check { config } => cmd_auth_check(config.as_deref()),
             AuthAction::List { config } => cmd_auth_list(config.as_deref()),
-            AuthAction::Login { provider } => cmd_auth_login(provider.as_deref()),
+            AuthAction::Login { provider, model } => {
+                cmd_auth_login(provider.as_deref(), model.as_deref())
+            }
             AuthAction::Logout { provider } => cmd_auth_logout(&provider),
         },
         Command::Panels { config } => cmd_panels(config.as_deref()),
@@ -335,7 +348,7 @@ fn cmd_panels(config: Option<&std::path::Path>) -> ExitCode {
 }
 
 #[cfg(all(feature = "cli", feature = "backend-http"))]
-fn cmd_auth_login(provider: Option<&str>) -> ExitCode {
+fn cmd_auth_login(provider: Option<&str>, model_override: Option<&str>) -> ExitCode {
     use proserpina::auth::api_key::run_api_key_flow;
     use proserpina::auth::tui_ratatui::RatatuiAuthUi;
     use proserpina::auth::{auth_registry, find_provider_auth, AuthStore, AuthUi};
@@ -411,6 +424,13 @@ fn cmd_auth_login(provider: Option<&str>) -> ExitCode {
                         ui.show_error(&format!("Failed to store tokens: {e}"));
                         return ExitCode::FAILURE;
                     }
+                    // Store model override if specified.
+                    if let Some(model) = model_override {
+                        if let Err(e) = store.store_model(provider_auth.name, model) {
+                            ui.show_error(&format!("Failed to store model override: {e}"));
+                            return ExitCode::FAILURE;
+                        }
+                    }
                     ui.show_success(&format!("{} authenticated via OAuth.", provider_auth.name));
                     return ExitCode::SUCCESS;
                 }
@@ -436,6 +456,14 @@ fn cmd_auth_login(provider: Option<&str>) -> ExitCode {
         return ExitCode::FAILURE;
     }
 
+    // Store model override if specified.
+    if let Some(model) = model_override {
+        if let Err(e) = store.store_model(provider_auth.name, model) {
+            ui.show_error(&format!("Failed to store model override: {e}"));
+            return ExitCode::FAILURE;
+        }
+    }
+
     ui.show_success(&format!(
         "{} authenticated. Key stored.",
         provider_auth.name
@@ -444,7 +472,7 @@ fn cmd_auth_login(provider: Option<&str>) -> ExitCode {
 }
 
 #[cfg(not(all(feature = "cli", feature = "backend-http")))]
-fn cmd_auth_login(_provider: Option<&str>) -> ExitCode {
+fn cmd_auth_login(_provider: Option<&str>, _model: Option<&str>) -> ExitCode {
     eprintln!("Built without `backend-http`; no auth available.");
     ExitCode::FAILURE
 }
@@ -514,6 +542,7 @@ fn run_critique_cmd(
     max_attempts: Option<u32>,
     timeout: Option<u64>,
     language: Option<&str>,
+    exclude: Option<&str>,
 ) -> Result<String, proserpina::ProserpinaError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input).map_err(|e| {
@@ -538,8 +567,17 @@ fn run_critique_cmd(
             .unwrap_or_default();
         let policy =
             proserpina::backend::http::RetryPolicy::resolve(&retry_config, max_attempts, timeout);
+        // Parse comma-separated --exclude into a Vec<String>.
+        let excludes: Vec<String> = exclude
+            .unwrap_or("")
+            .split(',')
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
+            .collect();
         if dry_run {
-            return proserpina::cli::plan_critique(&text, &source, seed, config, json, panel);
+            return proserpina::cli::plan_critique(
+                &text, &source, seed, config, json, panel, &excludes,
+            );
         }
 
         // Progress output for humans (stderr, so stdout stays clean for piping).
@@ -548,7 +586,9 @@ fn run_critique_cmd(
             eprintln!("Proserpina v0.2.1 — panel: {panel_name}\n");
         }
 
-        proserpina::cli::run_critique(&text, &source, seed, config, json, panel, policy, language)
+        proserpina::cli::run_critique(
+            &text, &source, seed, config, json, panel, policy, language, &excludes,
+        )
     }
 
     #[cfg(not(feature = "backend-http"))]
@@ -562,6 +602,7 @@ fn run_critique_cmd(
             max_attempts,
             timeout,
             language,
+            exclude,
         );
         let mut report = proserpina::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");

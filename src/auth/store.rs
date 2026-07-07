@@ -102,6 +102,13 @@ impl AuthStore {
         self.save()
     }
 
+    /// Stores a model override for a provider (merges into existing entry,
+    /// preserving api_key/oauth fields).
+    pub fn store_model(&mut self, provider_name: &str, model: &str) -> Result<(), ProserpinaError> {
+        self.credentials.merge_model(provider_name, model);
+        self.save()
+    }
+
     /// Writes the credentials back to the file.
     fn save(&self) -> Result<(), ProserpinaError> {
         let toml = self.credentials.to_toml_string();

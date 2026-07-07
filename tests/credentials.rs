@@ -300,3 +300,50 @@ fn authed_configs_uses_resolve_over_real_registry_and_env() {
         "no keys + no config -> no authed configs"
     );
 }
+
+#[test]
+fn exclude_list_parsed_from_toml() {
+    let toml = r#"
+exclude = ["qwen3.7-max", "mercury-2"]
+"#;
+    let creds = Credentials::from_toml(toml).expect("valid toml");
+    let excludes = creds.exclude();
+    assert_eq!(excludes.len(), 2);
+    assert!(excludes.contains(&"qwen3.7-max".to_owned()));
+    assert!(excludes.contains(&"mercury-2".to_owned()));
+}
+
+#[test]
+fn exclude_defaults_to_empty() {
+    let toml = "[deepseek]\napi_key = \"sk-x\"";
+    let creds = Credentials::from_toml(toml).expect("valid toml");
+    assert!(creds.exclude().is_empty());
+}
+
+#[test]
+fn merge_model_creates_new_entry() {
+    let mut creds = Credentials::default();
+    creds.merge_model("openai", "gpt-5.5");
+    let ov = creds.override_for("openai").expect("entry created");
+    assert_eq!(ov.model.as_deref(), Some("gpt-5.5"));
+    assert!(ov.api_key.is_none()); // other fields untouched
+}
+
+#[test]
+fn merge_model_preserves_existing_fields() {
+    let toml = r#"
+[openai]
+api_key = "sk-test"
+oauth_access = "acc"
+oauth_refresh = "ref"
+oauth_expires = 9999999999999
+"#;
+    let mut creds = Credentials::from_toml(toml).expect("valid toml");
+    creds.merge_model("openai", "gpt-5.5");
+    let ov = creds.override_for("openai").expect("entry exists");
+    assert_eq!(ov.model.as_deref(), Some("gpt-5.5"));
+    assert_eq!(ov.api_key.as_deref(), Some("sk-test"));
+    assert_eq!(ov.oauth_access.as_deref(), Some("acc"));
+    assert_eq!(ov.oauth_refresh.as_deref(), Some("ref"));
+    assert_eq!(ov.oauth_expires, Some(9999999999999));
+}

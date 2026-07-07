@@ -97,6 +97,9 @@ pub struct Credentials {
     providers: HashMap<String, ProviderOverride>,
     panels: HashMap<String, PanelConfig>,
     retry: RetryConfig,
+    /// Model names to exclude from the provider pool (e.g. `"qwen3.7-max"`
+    /// when billing is disabled). Matched against each config's model.
+    exclude: Vec<String>,
 }
 
 impl Credentials {
@@ -118,15 +121,17 @@ impl Credentials {
         if toml.trim().is_empty() {
             return Ok(Self::default());
         }
-        // Parse with an explicit `panels` table; everything else is a provider
-        // section (flattened). This keeps `[panels.NAME]` separate from
-        // `[provider-name]`.
+        // Parse with explicit `panels`, `retry`, and `exclude` tables; everything
+        // else is a provider section (flattened). This keeps `[panels.NAME]`
+        // separate from `[provider-name]`.
         #[derive(serde::Deserialize)]
         struct Raw {
             #[serde(default)]
             panels: HashMap<String, PanelConfig>,
             #[serde(default)]
             retry: RetryConfig,
+            #[serde(default)]
+            exclude: Vec<String>,
             #[serde(flatten)]
             providers: HashMap<String, ProviderOverride>,
         }
@@ -136,6 +141,7 @@ impl Credentials {
             providers: parsed.providers,
             panels: parsed.panels,
             retry: parsed.retry,
+            exclude: parsed.exclude,
         })
     }
 
@@ -196,6 +202,12 @@ impl Credentials {
     /// Sets or replaces an override for a provider (write access for AuthStore).
     pub fn set_override(&mut self, name: &str, override_: ProviderOverride) {
         self.providers.insert(name.to_owned(), override_);
+    }
+
+    /// Merges a model override into an existing provider entry (preserving
+    /// other fields like api_key or oauth tokens). Creates the entry if absent.
+    pub fn merge_model(&mut self, name: &str, model: &str) {
+        self.providers.entry(name.to_owned()).or_default().model = Some(model.to_owned());
     }
 
     /// Removes an override for a provider.
@@ -271,6 +283,11 @@ impl Credentials {
     /// The `[retry]` section, if present (all-`None` if absent).
     pub fn retry(&self) -> &RetryConfig {
         &self.retry
+    }
+
+    /// The model names to exclude from the provider pool.
+    pub fn exclude(&self) -> &[String] {
+        &self.exclude
     }
 }
 
@@ -404,6 +421,15 @@ pub fn resolve_configs_with_keyring(
 pub fn authed_configs_with(
     config_path: Option<&std::path::Path>,
 ) -> Result<Vec<HttpConfig>, ProserpinaError> {
+    authed_configs_with_excludes(config_path, &[])
+}
+
+/// Like [`authed_configs_with`] but also excludes the given model names (from
+/// `--exclude`). Both config-level and CLI-level excludes are applied.
+pub fn authed_configs_with_excludes(
+    config_path: Option<&std::path::Path>,
+    cli_excludes: &[String],
+) -> Result<Vec<HttpConfig>, ProserpinaError> {
     let credentials = match config_path {
         Some(path) => Credentials::from_path(path)?,
         None => Credentials::discover()?,
@@ -442,6 +468,10 @@ pub fn authed_configs_with(
     configs.retain(|c| !pi_hosts.contains(&extract_host(&c.base_url)));
     // Add all pi configs.
     configs.extend(pi_configs);
+
+    // Apply excludes: config-level (`exclude = [...]`) + CLI-level (`--exclude`).
+    let config_excludes = credentials.exclude();
+    configs.retain(|c| !config_excludes.contains(&c.model) && !cli_excludes.contains(&c.model));
 
     Ok(configs)
 }
