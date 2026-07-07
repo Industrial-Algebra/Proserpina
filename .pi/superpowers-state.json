@@ -30,9 +30,9 @@
     "phase": "idle",
     "testFiles": [],
     "sourceFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/src/auth/oauth.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/auth/store.rs"
+      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/store.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs"
     ],
     "redVerificationPending": false
   },

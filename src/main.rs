@@ -527,6 +527,12 @@ fn run_critique_cmd(
     #[cfg(feature = "backend-http")]
     {
         let seed = seed.unwrap_or_else(rand::random);
+
+        // Refresh any expired OAuth tokens before the run.
+        if let Ok(mut auth_store) = proserpina::auth::AuthStore::discover() {
+            let _ = auth_store.refresh_expired_oauth();
+        }
+
         let retry_config = proserpina::backend::credentials::Credentials::discover_or(config)
             .map(|c| c.retry().clone())
             .unwrap_or_default();

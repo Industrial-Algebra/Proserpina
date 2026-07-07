@@ -35,6 +35,13 @@ pub struct ProviderOverride {
     pub model: Option<String>,
     /// Override the registry's default base URL.
     pub base_url: Option<String>,
+    /// OAuth access token (for OAuth-type providers like OpenAI Codex).
+    /// When present, used as the bearer token instead of `api_key`.
+    pub oauth_access: Option<String>,
+    /// OAuth refresh token for refreshing expired access tokens.
+    pub oauth_refresh: Option<String>,
+    /// OAuth access token expiry, in milliseconds since Unix epoch.
+    pub oauth_expires: Option<u64>,
 }
 
 /// A user-defined panel from the config file: a named list of personas.
@@ -212,6 +219,15 @@ impl Credentials {
             if let Some(u) = &ov.base_url {
                 out.push_str(&format!("base_url = \"{u}\"\n"));
             }
+            if let Some(t) = &ov.oauth_access {
+                out.push_str(&format!("oauth_access = \"{t}\"\n"));
+            }
+            if let Some(r) = &ov.oauth_refresh {
+                out.push_str(&format!("oauth_refresh = \"{r}\"\n"));
+            }
+            if let Some(e) = ov.oauth_expires {
+                out.push_str(&format!("oauth_expires = {e}\n"));
+            }
             out.push('\n');
         }
         if !self.panels.is_empty() {
@@ -319,9 +335,10 @@ pub fn resolve_configs_with_keyring(
     for reg in registry {
         let cfg = credentials.override_for(reg.name());
         let key_var = reg.key_env_var();
-        let api_key = keyring_keys
-            .get(key_var)
-            .cloned()
+        // OAuth access token (if stored) takes priority; then keyring > env > config api_key.
+        let api_key = cfg
+            .and_then(|c| c.oauth_access.clone())
+            .or_else(|| keyring_keys.get(key_var).cloned())
             .or_else(|| env_keys.get(key_var).cloned())
             .or_else(|| cfg.and_then(|c| c.api_key.clone()));
         let Some(api_key) = api_key else {
