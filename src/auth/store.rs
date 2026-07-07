@@ -113,4 +113,23 @@ impl AuthStore {
     pub fn authed_configs(&self) -> Result<Vec<HttpConfig>, ProserpinaError> {
         crate::backend::credentials::authed_configs_with(None)
     }
+
+    /// Checks all stored OAuth credentials and refreshes any that are expired.
+    /// Called at startup (before a run) to ensure tokens are fresh.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ProserpinaError`] if the store can't be read. Individual
+    /// refresh failures are logged and skipped (the provider just won't be
+    /// authed).
+    pub fn refresh_expired_oauth(&mut self) -> Result<(), ProserpinaError> {
+        // For now, this is a no-op stub — the OAuth token storage format needs
+        // to be extended in ProviderOverride to carry refresh+expires fields.
+        // The infrastructure (oauth::refresh_token) is ready; the wiring depends
+        // on extending the credentials format.
+        //
+        // TODO for full v0.3.0: extend ProviderOverride with OAuth token fields
+        // (access, refresh, expires) and implement the refresh loop here.
+        Ok(())
+    }
 }

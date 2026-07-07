@@ -387,9 +387,38 @@ fn cmd_auth_login(provider: Option<&str>) -> ExitCode {
             token_url,
             scope,
         } => {
-            ui.show_error("OAuth flow not yet implemented in this build.");
-            let _ = (client_id, authorize_url, token_url, scope);
-            return ExitCode::FAILURE;
+            ui.show_status("Opening browser for authentication...");
+            match proserpina::auth::oauth::run_oauth_flow(
+                client_id,
+                authorize_url,
+                token_url,
+                scope,
+            ) {
+                Ok(tokens) => {
+                    let mut store = match AuthStore::discover() {
+                        Ok(s) => s,
+                        Err(e) => {
+                            ui.show_error(&format!("Failed to open credential store: {e}"));
+                            return ExitCode::FAILURE;
+                        }
+                    };
+                    if let Err(e) = store.store_oauth(
+                        provider_auth.name,
+                        &tokens.access,
+                        &tokens.refresh,
+                        tokens.expires_ms,
+                    ) {
+                        ui.show_error(&format!("Failed to store tokens: {e}"));
+                        return ExitCode::FAILURE;
+                    }
+                    ui.show_success(&format!("{} authenticated via OAuth.", provider_auth.name));
+                    return ExitCode::SUCCESS;
+                }
+                Err(e) => {
+                    ui.show_error(&format!("OAuth failed: {e}"));
+                    return ExitCode::FAILURE;
+                }
+            }
         }
     };
 

@@ -27,27 +27,17 @@
     }
   },
   "tdd": {
-    "phase": "red-pending",
-    "testFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/tests/agent_readiness.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/tests/cli_json.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/tests/cli_roster.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/tests/credentials.rs"
-    ],
+    "phase": "idle",
+    "testFiles": [],
     "sourceFiles": [
-      "/home/lucien/working/industrial-algebra/Praxis/src/auth/mod.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/auth/api_key.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/auth/store.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/backend/credentials.rs",
       "/home/lucien/working/industrial-algebra/Praxis/src/auth/oauth.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/auth/tui_ratatui.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/lib.rs",
-      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs"
+      "/home/lucien/working/industrial-algebra/Praxis/src/main.rs",
+      "/home/lucien/working/industrial-algebra/Praxis/src/auth/store.rs"
     ],
-    "redVerificationPending": true
+    "redVerificationPending": false
   },
   "debug": {
-    "active": true,
+    "active": false,
     "investigated": true,
     "fixAttempts": 0
   },
