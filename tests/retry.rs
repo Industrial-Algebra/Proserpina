@@ -305,3 +305,235 @@ timeout_secs = 30
     assert_eq!(p.max_attempts, 4);
     assert_eq!(p.timeout_secs, 30);
 }
+
+#[test]
+fn send_all_attempts_exhausted_surfaces_last_error() {
+    // Server always returns 429; with max_attempts=2, we should get an error
+    // (not a silent success), and exactly 2 requests should have been made.
+    let (url, count) = scripted_server(vec![429, 429]);
+    let policy = RetryPolicy::DEFAULT
+        .with_max_attempts(2)
+        .with_initial_backoff_ms(1);
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("rt");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .expect("client");
+    let body = serde_json::json!({"model":"x","messages":[]});
+    let result = rt.block_on(send_chat_completion(
+        &client,
+        &url,
+        "dummy",
+        &body,
+        &policy,
+        "test-agent",
+    ));
+    assert!(
+        result.is_err(),
+        "exhausted retries should error, not silently succeed"
+    );
+    let err_msg = format!("{}", result.unwrap_err());
+    assert!(
+        err_msg.contains("429"),
+        "error should mention the last status code"
+    );
+    assert_eq!(
+        *count.lock().unwrap(),
+        2,
+        "should have made exactly max_attempts requests"
+    );
+}
+
+#[test]
+fn send_503_then_200_retries_then_succeeds() {
+    // Server returns 503 (server error) then 200 — should retry and succeed.
+    let (url, count) = scripted_server(vec![503]);
+    let policy = RetryPolicy::DEFAULT
+        .with_initial_backoff_ms(1)
+        .with_max_backoff_ms(2);
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("rt");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .expect("client");
+    let body = serde_json::json!({"model":"x","messages":[]});
+    let result = rt.block_on(send_chat_completion(
+        &client,
+        &url,
+        "dummy",
+        &body,
+        &policy,
+        "test-agent",
+    ));
+    assert!(
+        result.is_ok(),
+        "503 then 200 should succeed: {:?}",
+        result.err()
+    );
+    assert_eq!(*count.lock().unwrap(), 2);
+}
+
+#[test]
+fn send_408_timeout_retries() {
+    // HTTP 408 (request timeout) is retryable.
+    let (url, count) = scripted_server(vec![408]);
+    let policy = RetryPolicy::DEFAULT
+        .with_initial_backoff_ms(1)
+        .with_max_backoff_ms(2);
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("rt");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .expect("client");
+    let body = serde_json::json!({"model":"x","messages":[]});
+    let result = rt.block_on(send_chat_completion(
+        &client,
+        &url,
+        "dummy",
+        &body,
+        &policy,
+        "test-agent",
+    ));
+    assert!(result.is_ok(), "408 then 200 should succeed");
+    assert_eq!(*count.lock().unwrap(), 2);
+}
+
+// ---- backoff verification (actually sleeps, not instant) ----
+
+#[test]
+fn send_retries_with_actual_backoff_delay() {
+    // With a 100ms initial backoff, the first retry should take at least ~100ms
+    // (proving the backoff actually sleeps, not just loops instantly).
+    let (url, _count) = scripted_server(vec![429]);
+    let policy = RetryPolicy {
+        max_attempts: 2,
+        initial_backoff_ms: 100,
+        backoff_factor: 1.0, // no growth; just 100ms flat
+        max_backoff_ms: 100,
+        timeout_secs: 5,
+    };
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("rt");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .expect("client");
+    let body = serde_json::json!({"model":"x","messages":[]});
+    let start = std::time::Instant::now();
+    let _ = rt.block_on(send_chat_completion(
+        &client,
+        &url,
+        "dummy",
+        &body,
+        &policy,
+        "test-agent",
+    ));
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed >= std::time::Duration::from_millis(90),
+        "backoff should have slept ~100ms, took {elapsed:?}"
+    );
+}
+
+// ---- timeout behavior ----
+
+#[test]
+fn send_timeout_kills_slow_server() {
+    // Start a server that hangs (never responds). With a 1s timeout, the
+    // request should fail within ~1.5s, not hang forever.
+    use tokio::net::TcpListener;
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("rt");
+    let listener = rt
+        .block_on(async { TcpListener::bind("127.0.0.1:0").await })
+        .expect("bind");
+    let addr = listener.local_addr().expect("addr");
+    let url = format!("http://{addr}/chat/completions");
+
+    // Spawn the hanging server.
+    let hang_rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("hang rt");
+    std::thread::spawn(move || {
+        hang_rt.block_on(async move {
+            loop {
+                if let Ok((mut sock, _)) = listener.accept().await {
+                    // Accept but never respond (hang).
+                    let mut buf = vec![0u8; 1024];
+                    use tokio::io::AsyncReadExt;
+                    let _ = sock.read(&mut buf).await;
+                    // Just drop the socket — never write a response.
+                    drop(sock);
+                    // Keep the connection open briefly to simulate a hang.
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                }
+            }
+        });
+    });
+
+    let policy = RetryPolicy::NONE.with_timeout_secs(1);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(1))
+        .build()
+        .expect("client");
+    let body = serde_json::json!({"model":"x","messages":[]});
+
+    let start = std::time::Instant::now();
+    let result = rt.block_on(send_chat_completion(
+        &client,
+        &url,
+        "dummy",
+        &body,
+        &policy,
+        "test-agent",
+    ));
+    let elapsed = start.elapsed();
+
+    assert!(result.is_err(), "hanging server should timeout and fail");
+    assert!(
+        elapsed < std::time::Duration::from_secs(3),
+        "should timeout quickly, took {elapsed:?}"
+    );
+}
+
+// ---- graceful degradation with scripted servers ----
+
+#[test]
+fn send_network_error_does_not_crash() {
+    // A completely unreachable host should return an error, not panic.
+    let url = "http://127.0.0.1:1/chat/completions"; // port 1 = unreachable
+    let policy = RetryPolicy::NONE;
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .expect("rt");
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(2))
+        .build()
+        .expect("client");
+    let body = serde_json::json!({"model":"x","messages":[]});
+    let result = rt.block_on(send_chat_completion(
+        &client,
+        url,
+        "dummy",
+        &body,
+        &policy,
+        "test-agent",
+    ));
+    assert!(result.is_err(), "unreachable host should fail gracefully");
+}

@@ -65,6 +65,9 @@ mod transcript;
 #[cfg(feature = "backend-http")]
 pub mod summary;
 
+#[cfg(all(feature = "cli", feature = "backend-http"))]
+pub mod auth;
+
 pub use agent::{Agent, AgentId};
 #[cfg(feature = "backend-http")]
 pub use agent_info::{Capabilities, Plan, PlanSlot, ProviderInfo};

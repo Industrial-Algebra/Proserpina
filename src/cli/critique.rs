@@ -40,6 +40,7 @@ pub fn default_personas() -> Vec<Persona> {
 /// # Errors
 ///
 /// Returns [`ProserpinaError`] if the run fails (the echo backend never does).
+#[allow(clippy::too_many_arguments)]
 pub fn run_critique_echo(input: &str, source: &str) -> Result<String, ProserpinaError> {
     let personas = default_personas();
     // Echo agents use the persona name as their AgentId.
@@ -73,6 +74,7 @@ pub fn run_critique_echo(input: &str, source: &str) -> Result<String, Proserpina
 /// the environment. Returns [`ProserpinaError::AgentFailure`] if a provider fails
 /// to respond.
 #[cfg(all(feature = "cli", feature = "backend-http"))]
+#[allow(clippy::too_many_arguments)]
 pub fn run_critique(
     input: &str,
     source: &str,
@@ -81,8 +83,10 @@ pub fn run_critique(
     json: bool,
     panel: Option<&str>,
     policy: crate::backend::http::RetryPolicy,
+    language: Option<&str>,
+    excludes: &[String],
 ) -> Result<String, ProserpinaError> {
-    use crate::backend::credentials::{authed_configs_with, Credentials};
+    use crate::backend::credentials::{authed_configs_with_excludes, Credentials};
     use crate::backend::http::HttpAgent;
     use crate::backend::roster::{random_roster, Provider};
     use crate::persona::resolve_panel;
@@ -91,7 +95,7 @@ pub fn run_critique(
 
     let credentials = Credentials::discover_or(config_path)?;
     let personas = resolve_panel(panel.unwrap_or("default"), &credentials)?;
-    let configs = authed_configs_with(config_path)?;
+    let configs = authed_configs_with_excludes(config_path, excludes)?;
     if configs.is_empty() {
         return Err(ProserpinaError::no_authed_providers(
             Provider::registry()
@@ -136,6 +140,9 @@ pub fn run_critique(
         for (attempt_idx, cfg) in configs_to_try.iter().enumerate() {
             let mut agent =
                 HttpAgent::new_with_policy(id.clone(), persona.clone(), (*cfg).clone(), policy);
+            if let Some(lang) = language {
+                agent = agent.with_language(lang);
+            }
             match agent.respond(&prompt) {
                 Ok(response) => {
                     if !json && attempt_idx > 0 {
@@ -177,7 +184,8 @@ pub fn run_critique(
 
     // Summarizer pass: structure the transcript into rich findings via the
     // first authed config. Graceful on empty (yields no findings).
-    let findings = summarize(&subject, &transcript, &configs[0], &policy).unwrap_or_default();
+    let findings =
+        summarize(&subject, &transcript, &configs[0], &policy, language).unwrap_or_default();
     let mut report = Report::new();
     for f in findings {
         report.push_finding(f);
@@ -224,14 +232,15 @@ pub fn plan_critique(
     config_path: Option<&std::path::Path>,
     _json: bool,
     panel: Option<&str>,
+    excludes: &[String],
 ) -> Result<String, ProserpinaError> {
     use crate::agent_info::Plan;
-    use crate::backend::credentials::{authed_configs_with, Credentials};
+    use crate::backend::credentials::{authed_configs_with_excludes, Credentials};
     use crate::backend::roster::Provider;
     use crate::persona::resolve_panel;
 
     let credentials = Credentials::discover_or(config_path)?;
-    let configs = authed_configs_with(config_path)?;
+    let configs = authed_configs_with_excludes(config_path, excludes)?;
     if configs.is_empty() {
         return Err(ProserpinaError::no_authed_providers(
             Provider::registry()

@@ -63,6 +63,15 @@ enum Command {
         /// Override the retry policy's per-attempt timeout in seconds.
         #[arg(long)]
         timeout: Option<u64>,
+        /// Output language for critiques and findings (e.g. "Japanese", "français").
+        /// If omitted, the model chooses based on the document.
+        #[arg(long)]
+        language: Option<String>,
+        /// Comma-separated model names to exclude from the provider pool
+        /// (e.g. `--exclude qwen3.7-max,mercury-2`). Also settable via
+        /// `exclude = [...]` in credentials.toml.
+        #[arg(long)]
+        exclude: Option<String>,
     },
 
     /// Show capabilities: version, providers (and which are authed), panels,
@@ -101,6 +110,21 @@ enum AuthAction {
         #[arg(long)]
         config: Option<PathBuf>,
     },
+    /// Interactively authenticate with a provider (acquire + store a credential).
+    Login {
+        /// Provider name (e.g. deepseek, openai, zai). If omitted, shows a
+        /// selector.
+        provider: Option<String>,
+        /// Override the default model for this provider (stored in
+        /// credentials.toml). E.g. `--model gpt-5.5`.
+        #[arg(long)]
+        model: Option<String>,
+    },
+    /// Remove stored credentials for a provider.
+    Logout {
+        /// Provider name to remove.
+        provider: String,
+    },
 }
 
 fn main() -> ExitCode {
@@ -118,6 +142,8 @@ fn main() -> ExitCode {
             panel,
             max_attempts,
             timeout,
+            language,
+            exclude,
         } => match run_critique_cmd(
             &input,
             echo,
@@ -128,6 +154,8 @@ fn main() -> ExitCode {
             panel.as_deref(),
             max_attempts,
             timeout,
+            language.as_deref(),
+            exclude.as_deref(),
         ) {
             Ok(output) => {
                 match out {
@@ -149,6 +177,10 @@ fn main() -> ExitCode {
         Command::Auth { action } => match action.unwrap_or(AuthAction::Check { config: None }) {
             AuthAction::Check { config } => cmd_auth_check(config.as_deref()),
             AuthAction::List { config } => cmd_auth_list(config.as_deref()),
+            AuthAction::Login { provider, model } => {
+                cmd_auth_login(provider.as_deref(), model.as_deref())
+            }
+            AuthAction::Logout { provider } => cmd_auth_logout(&provider),
         },
         Command::Panels { config } => cmd_panels(config.as_deref()),
     }
@@ -315,6 +347,164 @@ fn cmd_panels(config: Option<&std::path::Path>) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+#[cfg(all(feature = "cli", feature = "backend-http"))]
+fn cmd_auth_login(provider: Option<&str>, model_override: Option<&str>) -> ExitCode {
+    use proserpina::auth::api_key::run_api_key_flow;
+    use proserpina::auth::tui_ratatui::RatatuiAuthUi;
+    use proserpina::auth::{auth_registry, find_provider_auth, AuthStore, AuthUi};
+
+    let ui = RatatuiAuthUi;
+
+    // Determine which provider to authenticate.
+    let provider_auth = if let Some(name) = provider {
+        match find_provider_auth(name) {
+            Some(p) => p,
+            None => {
+                ui.show_error(&format!("Unknown provider: {name}"));
+                ui.show_error(&format!(
+                    "Available: {}",
+                    auth_registry()
+                        .iter()
+                        .map(|p| p.name)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                ));
+                return ExitCode::FAILURE;
+            }
+        }
+    } else {
+        // Show provider selector.
+        let registry = auth_registry();
+        match ui.select_provider(registry) {
+            Some(idx) => &registry[idx],
+            None => {
+                ui.show_status("Cancelled.");
+                return ExitCode::SUCCESS;
+            }
+        }
+    };
+
+    // Run the appropriate auth flow.
+    let key = match &provider_auth.method {
+        proserpina::auth::AuthMethod::ApiKey { .. } => match run_api_key_flow(&ui, provider_auth) {
+            Ok(k) => k,
+            Err(e) => {
+                ui.show_error(&format!("Auth failed: {e}"));
+                return ExitCode::FAILURE;
+            }
+        },
+        #[cfg(feature = "cli")]
+        proserpina::auth::AuthMethod::OAuth {
+            client_id,
+            authorize_url,
+            token_url,
+            scope,
+        } => {
+            ui.show_status("Opening browser for authentication...");
+            match proserpina::auth::oauth::run_oauth_flow(
+                client_id,
+                authorize_url,
+                token_url,
+                scope,
+            ) {
+                Ok(tokens) => {
+                    let mut store = match AuthStore::discover() {
+                        Ok(s) => s,
+                        Err(e) => {
+                            ui.show_error(&format!("Failed to open credential store: {e}"));
+                            return ExitCode::FAILURE;
+                        }
+                    };
+                    if let Err(e) = store.store_oauth(
+                        provider_auth.name,
+                        &tokens.access,
+                        &tokens.refresh,
+                        tokens.expires_ms,
+                    ) {
+                        ui.show_error(&format!("Failed to store tokens: {e}"));
+                        return ExitCode::FAILURE;
+                    }
+                    // Store model override if specified.
+                    if let Some(model) = model_override {
+                        if let Err(e) = store.store_model(provider_auth.name, model) {
+                            ui.show_error(&format!("Failed to store model override: {e}"));
+                            return ExitCode::FAILURE;
+                        }
+                    }
+                    ui.show_success(&format!("{} authenticated via OAuth.", provider_auth.name));
+                    return ExitCode::SUCCESS;
+                }
+                Err(e) => {
+                    ui.show_error(&format!("OAuth failed: {e}"));
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+    };
+
+    // Store the credential.
+    let mut store = match AuthStore::discover() {
+        Ok(s) => s,
+        Err(e) => {
+            ui.show_error(&format!("Failed to open credential store: {e}"));
+            return ExitCode::FAILURE;
+        }
+    };
+
+    if let Err(e) = store.store_api_key(provider_auth.name, &key) {
+        ui.show_error(&format!("Failed to store credential: {e}"));
+        return ExitCode::FAILURE;
+    }
+
+    // Store model override if specified.
+    if let Some(model) = model_override {
+        if let Err(e) = store.store_model(provider_auth.name, model) {
+            ui.show_error(&format!("Failed to store model override: {e}"));
+            return ExitCode::FAILURE;
+        }
+    }
+
+    ui.show_success(&format!(
+        "{} authenticated. Key stored.",
+        provider_auth.name
+    ));
+    ExitCode::SUCCESS
+}
+
+#[cfg(not(all(feature = "cli", feature = "backend-http")))]
+fn cmd_auth_login(_provider: Option<&str>, _model: Option<&str>) -> ExitCode {
+    eprintln!("Built without `backend-http`; no auth available.");
+    ExitCode::FAILURE
+}
+
+#[cfg(all(feature = "cli", feature = "backend-http"))]
+fn cmd_auth_logout(provider: &str) -> ExitCode {
+    use proserpina::auth::AuthStore;
+    let mut store = match AuthStore::discover() {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Failed to open credential store: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    match store.remove(provider) {
+        Ok(()) => {
+            println!("✓ Removed credentials for {provider}");
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            eprintln!("✗ Failed: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+#[cfg(not(all(feature = "cli", feature = "backend-http")))]
+fn cmd_auth_logout(_provider: &str) -> ExitCode {
+    eprintln!("Built without `backend-http`.");
+    ExitCode::FAILURE
+}
+
 /// Emits an error appropriately: structured JSON on stderr if `--json`, else
 /// human-readable prose with actionable guidance.
 fn emit_error(err: &proserpina::ProserpinaError, json: bool) {
@@ -351,6 +541,8 @@ fn run_critique_cmd(
     panel: Option<&str>,
     max_attempts: Option<u32>,
     timeout: Option<u64>,
+    language: Option<&str>,
+    exclude: Option<&str>,
 ) -> Result<String, proserpina::ProserpinaError> {
     let source = input.to_string_lossy().to_string();
     let text = std::fs::read_to_string(input).map_err(|e| {
@@ -364,27 +556,54 @@ fn run_critique_cmd(
     #[cfg(feature = "backend-http")]
     {
         let seed = seed.unwrap_or_else(rand::random);
+
+        // Refresh any expired OAuth tokens before the run.
+        if let Ok(mut auth_store) = proserpina::auth::AuthStore::discover() {
+            let _ = auth_store.refresh_expired_oauth();
+        }
+
         let retry_config = proserpina::backend::credentials::Credentials::discover_or(config)
             .map(|c| c.retry().clone())
             .unwrap_or_default();
         let policy =
             proserpina::backend::http::RetryPolicy::resolve(&retry_config, max_attempts, timeout);
+        // Parse comma-separated --exclude into a Vec<String>.
+        let excludes: Vec<String> = exclude
+            .unwrap_or("")
+            .split(',')
+            .map(|s| s.trim().to_owned())
+            .filter(|s| !s.is_empty())
+            .collect();
         if dry_run {
-            return proserpina::cli::plan_critique(&text, &source, seed, config, json, panel);
+            return proserpina::cli::plan_critique(
+                &text, &source, seed, config, json, panel, &excludes,
+            );
         }
 
         // Progress output for humans (stderr, so stdout stays clean for piping).
         if !json {
             let panel_name = panel.unwrap_or("default");
-            eprintln!("Proserpina v0.1.0 — panel: {panel_name}\n");
+            eprintln!("Proserpina v0.3.0 — panel: {panel_name}\n");
         }
 
-        proserpina::cli::run_critique(&text, &source, seed, config, json, panel, policy)
+        proserpina::cli::run_critique(
+            &text, &source, seed, config, json, panel, policy, language, &excludes,
+        )
     }
 
     #[cfg(not(feature = "backend-http"))]
     {
-        let _ = (seed, config, json, dry_run, panel, max_attempts, timeout);
+        let _ = (
+            seed,
+            config,
+            json,
+            dry_run,
+            panel,
+            max_attempts,
+            timeout,
+            language,
+            exclude,
+        );
         let mut report = proserpina::cli::run_critique_echo(&text, &source)?;
         report.push_str("\n_(built without `backend-http`; used the echo backend)_\n");
         Ok(report)

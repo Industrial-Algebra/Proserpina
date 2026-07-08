@@ -30,7 +30,15 @@ cargo build --features cli,backend-http,json
 
 ```bash
 proserpina --version
-proserpina capabilities   # JSON self-description; check the `authed` field
+proserpina capabilities   # overview; check the `authed` field
+```
+
+## Authenticate
+
+```bash
+proserpina auth login deepseek    # API key prompt → validate → store
+proserpina auth login openai      # OAuth browser flow
+proserpina auth check             # validate all stored keys
 ```
 
 ## The credentials file

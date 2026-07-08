@@ -35,6 +35,13 @@ pub struct ProviderOverride {
     pub model: Option<String>,
     /// Override the registry's default base URL.
     pub base_url: Option<String>,
+    /// OAuth access token (for OAuth-type providers like OpenAI Codex).
+    /// When present, used as the bearer token instead of `api_key`.
+    pub oauth_access: Option<String>,
+    /// OAuth refresh token for refreshing expired access tokens.
+    pub oauth_refresh: Option<String>,
+    /// OAuth access token expiry, in milliseconds since Unix epoch.
+    pub oauth_expires: Option<u64>,
 }
 
 /// A user-defined panel from the config file: a named list of personas.
@@ -90,6 +97,9 @@ pub struct Credentials {
     providers: HashMap<String, ProviderOverride>,
     panels: HashMap<String, PanelConfig>,
     retry: RetryConfig,
+    /// Model names to exclude from the provider pool (e.g. `"qwen3.7-max"`
+    /// when billing is disabled). Matched against each config's model.
+    exclude: Vec<String>,
 }
 
 impl Credentials {
@@ -111,15 +121,17 @@ impl Credentials {
         if toml.trim().is_empty() {
             return Ok(Self::default());
         }
-        // Parse with an explicit `panels` table; everything else is a provider
-        // section (flattened). This keeps `[panels.NAME]` separate from
-        // `[provider-name]`.
+        // Parse with explicit `panels`, `retry`, and `exclude` tables; everything
+        // else is a provider section (flattened). This keeps `[panels.NAME]`
+        // separate from `[provider-name]`.
         #[derive(serde::Deserialize)]
         struct Raw {
             #[serde(default)]
             panels: HashMap<String, PanelConfig>,
             #[serde(default)]
             retry: RetryConfig,
+            #[serde(default)]
+            exclude: Vec<String>,
             #[serde(flatten)]
             providers: HashMap<String, ProviderOverride>,
         }
@@ -129,6 +141,7 @@ impl Credentials {
             providers: parsed.providers,
             panels: parsed.panels,
             retry: parsed.retry,
+            exclude: parsed.exclude,
         })
     }
 
@@ -186,6 +199,58 @@ impl Credentials {
         self.providers.get(name)
     }
 
+    /// Sets or replaces an override for a provider (write access for AuthStore).
+    pub fn set_override(&mut self, name: &str, override_: ProviderOverride) {
+        self.providers.insert(name.to_owned(), override_);
+    }
+
+    /// Merges a model override into an existing provider entry (preserving
+    /// other fields like api_key or oauth tokens). Creates the entry if absent.
+    pub fn merge_model(&mut self, name: &str, model: &str) {
+        self.providers.entry(name.to_owned()).or_default().model = Some(model.to_owned());
+    }
+
+    /// Removes an override for a provider.
+    pub fn remove_override(&mut self, name: &str) {
+        self.providers.remove(name);
+    }
+
+    /// Serializes back to a TOML string (for AuthStore::save).
+    pub fn to_toml_string(&self) -> String {
+        // Use serde to serialize the providers map + panels + retry.
+        // For now, a simple manual serialize since we need control over format.
+        let mut out = String::new();
+        for (name, ov) in &self.providers {
+            out.push_str(&format!("[{name}]\n"));
+            if let Some(k) = &ov.api_key {
+                out.push_str(&format!("api_key = \"{k}\"\n"));
+            }
+            if let Some(m) = &ov.model {
+                out.push_str(&format!("model = \"{m}\"\n"));
+            }
+            if let Some(u) = &ov.base_url {
+                out.push_str(&format!("base_url = \"{u}\"\n"));
+            }
+            if let Some(t) = &ov.oauth_access {
+                out.push_str(&format!("oauth_access = \"{t}\"\n"));
+            }
+            if let Some(r) = &ov.oauth_refresh {
+                out.push_str(&format!("oauth_refresh = \"{r}\"\n"));
+            }
+            if let Some(e) = ov.oauth_expires {
+                out.push_str(&format!("oauth_expires = {e}\n"));
+            }
+            out.push('\n');
+        }
+        if !self.panels.is_empty() {
+            // Panels are complex; skip for now (they round-trip via from_toml).
+        }
+        if out.is_empty() {
+            out = "# Proserpina credentials\n".to_owned();
+        }
+        out
+    }
+
     /// Whether the config is empty (no provider sections).
     pub fn is_empty(&self) -> bool {
         self.providers.is_empty()
@@ -218,6 +283,11 @@ impl Credentials {
     /// The `[retry]` section, if present (all-`None` if absent).
     pub fn retry(&self) -> &RetryConfig {
         &self.retry
+    }
+
+    /// The model names to exclude from the provider pool.
+    pub fn exclude(&self) -> &[String] {
+        &self.exclude
     }
 }
 
@@ -282,9 +352,10 @@ pub fn resolve_configs_with_keyring(
     for reg in registry {
         let cfg = credentials.override_for(reg.name());
         let key_var = reg.key_env_var();
-        let api_key = keyring_keys
-            .get(key_var)
-            .cloned()
+        // OAuth access token (if stored) takes priority; then keyring > env > config api_key.
+        let api_key = cfg
+            .and_then(|c| c.oauth_access.clone())
+            .or_else(|| keyring_keys.get(key_var).cloned())
             .or_else(|| env_keys.get(key_var).cloned())
             .or_else(|| cfg.and_then(|c| c.api_key.clone()));
         let Some(api_key) = api_key else {
@@ -350,6 +421,15 @@ pub fn resolve_configs_with_keyring(
 pub fn authed_configs_with(
     config_path: Option<&std::path::Path>,
 ) -> Result<Vec<HttpConfig>, ProserpinaError> {
+    authed_configs_with_excludes(config_path, &[])
+}
+
+/// Like [`authed_configs_with`] but also excludes the given model names (from
+/// `--exclude`). Both config-level and CLI-level excludes are applied.
+pub fn authed_configs_with_excludes(
+    config_path: Option<&std::path::Path>,
+    cli_excludes: &[String],
+) -> Result<Vec<HttpConfig>, ProserpinaError> {
     let credentials = match config_path {
         Some(path) => Credentials::from_path(path)?,
         None => Credentials::discover()?,
@@ -372,7 +452,172 @@ pub fn authed_configs_with(
     let keyring_keys = read_keyring_snapshot(&credentials);
     #[cfg(not(feature = "keyring"))]
     let keyring_keys: HashMap<String, String> = HashMap::new();
-    resolve_configs_with_keyring(Provider::registry(), &credentials, &env_keys, &keyring_keys)
+    let mut configs =
+        resolve_configs_with_keyring(Provider::registry(), &credentials, &env_keys, &keyring_keys)?;
+
+    // Merge in pi's discovered configs (correct per-user URLs/models that the
+    // hardcoded registry may not know). Dedupe by provider host: when a pi
+    // config has the same host as a registry config, the pi config REPLACES
+    // the registry one (pi has the user's actual current model + URL).
+    let pi_configs = discover_pi_configs();
+    let pi_hosts: std::collections::HashSet<String> = pi_configs
+        .iter()
+        .map(|c| extract_host(&c.base_url))
+        .collect();
+    // Remove registry configs whose host is also served by a pi config.
+    configs.retain(|c| !pi_hosts.contains(&extract_host(&c.base_url)));
+    // Add all pi configs.
+    configs.extend(pi_configs);
+
+    // Apply excludes: config-level (`exclude = [...]`) + CLI-level (`--exclude`).
+    let config_excludes = credentials.exclude();
+    configs.retain(|c| !config_excludes.contains(&c.model) && !cli_excludes.contains(&c.model));
+
+    Ok(configs)
+}
+
+/// Discovers provider configs from pi's `~/.pi/agent/models.json`, if pi is
+/// installed. Returns authed `HttpConfig`s for each provider whose referenced
+/// env var is set.
+///
+/// pi maintains correct per-user provider configs (baseUrl, model, key env-var
+/// ref). Proserpina reads these to avoid maintaining a competing hardcoded
+/// registry that drifts. If pi isn't installed, returns empty.
+///
+/// Also reads pi's `auth.json` — for providers that need a login step (Z.ai,
+/// DashScope, Google), pi stores the actual working API key there. Those keys
+/// are injected into the resolution so they work even when pi isn't running or
+/// hasn't exported the env var.
+pub fn discover_pi_configs() -> Vec<HttpConfig> {
+    // Find pi's config: $PI_HOME/agent/models.json or ~/.pi/agent/models.json
+    let pi_home = std::env::var("PI_HOME")
+        .ok()
+        .or_else(|| std::env::var("HOME").ok().map(|h| format!("{h}/.pi")));
+    let Some(pi_home) = pi_home else {
+        return Vec::new();
+    };
+    let models_path = std::path::Path::new(&pi_home).join("agent/models.json");
+    let Ok(contents) = std::fs::read_to_string(&models_path) else {
+        return Vec::new(); // pi not installed or no models.json
+    };
+    let Ok(parsed): Result<serde_json::Value, _> = serde_json::from_str(&contents) else {
+        return Vec::new(); // malformed — skip silently
+    };
+    let Some(providers) = parsed.get("providers").and_then(|p| p.as_object()) else {
+        return Vec::new();
+    };
+
+    // Read pi's auth.json for login-step keys (Z.ai, DashScope, Google, etc.).
+    // These are the actual working keys that pi's login obtains.
+    let auth_keys = read_pi_auth_keys(&pi_home);
+
+    let mut configs = Vec::new();
+    for (_name, provider) in providers {
+        let base_url = provider.get("baseUrl").and_then(|v| v.as_str());
+        let api_key_ref = provider.get("apiKey").and_then(|v| v.as_str());
+        let models = provider.get("models").and_then(|m| m.as_array());
+        let api = provider.get("api").and_then(|v| v.as_str());
+
+        // Only OpenAI-compatible providers.
+        if api != Some("openai-completions") {
+            continue;
+        }
+
+        let (Some(base_url), Some(api_key_ref), Some(models)) = (base_url, api_key_ref, models)
+        else {
+            continue;
+        };
+
+        // Resolve the key: pi uses "$ENV_VAR" refs.
+        // Priority: auth.json key > env var.
+        let key_var = api_key_ref.strip_prefix('$').unwrap_or(api_key_ref);
+        let api_key = auth_keys
+            .get(key_var)
+            .cloned()
+            .or_else(|| std::env::var(key_var).ok());
+        let Some(api_key) = api_key else {
+            continue; // not authed
+        };
+
+        // Use the first model's id.
+        let model = models
+            .first()
+            .and_then(|m| m.get("id").and_then(|id| id.as_str()))
+            .unwrap_or("default");
+
+        configs.push(HttpConfig {
+            base_url: base_url.to_owned(),
+            model: model.to_owned(),
+            api_key,
+        });
+    }
+    configs
+}
+
+/// Reads pi's `auth.json` and extracts the API keys from `type="api_key"`
+/// entries. Returns a map of env-var-name -> key, so the key resolution can
+/// look them up by the `$ENV_VAR` reference in models.json.
+///
+/// The mapping from auth.json entry name to env var name:
+/// - `dashscope` -> `DASHSCOPE_API_KEY`
+/// - `zai-coding-cn` -> `ZAI_API_KEY` (strip `-coding-cn`, or known mapping)
+/// - `google` -> `GOOGLE_API_KEY`
+///
+/// OAuth entries (`type="oauth"`) are skipped — their access tokens are
+/// time-limited and need pi's runtime to refresh.
+fn read_pi_auth_keys(pi_home: &str) -> HashMap<String, String> {
+    let auth_path = std::path::Path::new(pi_home).join("agent/auth.json");
+    let Ok(contents) = std::fs::read_to_string(&auth_path) else {
+        return HashMap::new();
+    };
+    let Ok(parsed): Result<serde_json::Value, _> = serde_json::from_str(&contents) else {
+        return HashMap::new();
+    };
+    let Some(entries) = parsed.as_object() else {
+        return HashMap::new();
+    };
+
+    let mut out = HashMap::new();
+    for (name, creds) in entries {
+        // Only type="api_key" entries.
+        let cred_type = creds.get("type").and_then(|t| t.as_str());
+        if cred_type != Some("api_key") {
+            continue;
+        }
+        let Some(key) = creds.get("key").and_then(|k| k.as_str()) else {
+            continue;
+        };
+
+        // Map auth.json entry name to env var name.
+        let env_var = auth_entry_to_env_var(name);
+        out.insert(env_var, key.to_owned());
+    }
+    out
+}
+
+/// Extracts the hostname from a base_url for provider-dedup purposes.
+/// `https://api.deepseek.com/v1` → `api.deepseek.com`
+/// `https://api.deepseek.com` → `api.deepseek.com`
+fn extract_host(url: &str) -> String {
+    let no_scheme = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url);
+    let no_port = no_scheme.split(':').next().unwrap_or(no_scheme);
+    let no_path = no_port.split('/').next().unwrap_or(no_port);
+    no_path.to_owned()
+}
+
+/// Maps a pi auth.json entry name to the corresponding env var name.
+/// `dashscope` -> `DASHSCOPE_API_KEY`, `zai-coding-cn` -> `ZAI_API_KEY`, etc.
+fn auth_entry_to_env_var(name: &str) -> String {
+    // Known mappings for pi-specific entry names.
+    let base = match name {
+        "zai-coding-cn" => "zai",
+        "openai-codex" => "openai",
+        other => other,
+    };
+    format!("{}_API_KEY", base.replace('-', "_").to_uppercase())
 }
 
 /// The thin CLI-facing wrapper over [`resolve_configs`]: discovers the

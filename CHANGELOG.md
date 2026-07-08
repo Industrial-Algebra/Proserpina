@@ -4,6 +4,78 @@ All notable changes to Proserpina are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-07-07
+
+### Added — Auth Subsystem
+
+- **`proserpina auth login <provider>`**: interactive credential acquisition.
+  API-key providers (DeepSeek, Z.ai, DashScope, Google, Moonshot) prompt for
+  a key, validate it via GET /models, and store it. OpenAI uses an OAuth PKCE
+  browser flow (same client_id as OpenAI's Codex CLI).
+- **`proserpina auth login [--model <name>]`**: model override at login.
+  `proserpina auth login openai --model gpt-5.5` pins the model version
+  alongside the credential in one step.
+- **`proserpina auth login`** (no provider): provider selector with auth
+  methods shown.
+- **`proserpina auth logout <provider>`**: removes stored credentials.
+- **OAuth token lifecycle**: tokens stored with structured fields
+  (access/refresh/expires); expired tokens auto-refreshed before each run.
+- **AuthUi trait seam**: the auth UI is trait-isolated — ratatui now, Knopper
+  later (zero logic changes to swap).
+
+### Added — Provider Exclusion
+
+- **`exclude = ["qwen3.7-max"]`** in credentials.toml disables a model from the
+  roster pool. CLI: `--exclude qwen3.7-max,mercury-2`. Both are applied (union).
+  Matched by model name (what's visible in capabilities/dry-run).
+
+### Added — Pi Provider Discovery
+
+- Auto-discovers pi's `models.json` + `auth.json` for correct per-user provider
+  configs (URLs, models, keys). Solves the "key-exists ≠ key-valid" problem for
+  pi-managed providers. Convenience layer; `auth login` credentials take
+  precedence.
+
+### Added — Language Flag
+
+- **`--language <lang>`**: critics and summarizer respond in the specified
+  language (e.g. `--language Japanese`, `--language français`). Default: model
+  chooses based on the document.
+
+### Added — Human-Readable CLI
+
+- `capabilities` defaults to human-readable table (not JSON); `--json` for agents.
+- Progress output during `critique` runs (stderr).
+- Actionable error messages.
+- New subcommands: `auth check/list`, `panels`.
+
+### Added — Graceful Provider Degradation
+
+- If a provider fails mid-run, Proserpina tries reassigning the critic to
+  another authed provider, or skips it and continues. A single bad key no longer
+  kills the whole run.
+
+### Changed
+
+- **OpenAI default model bumped** from `gpt-4o` to `gpt-5.4` in the registry.
+- **Provider dedup now host-based**: when a pi-discovered config shares a host
+  with a registry entry (e.g. `api.deepseek.com`), the pi config *replaces* the
+  registry one. Prevents double-weighting the same provider with different models.
+- **Credential resolution precedence**: OAuth access > keyring > env > config > pi discovery > none.
+
+[0.3.0]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.3.0
+
+## [0.2.1] — 2026-06-28
+
+### Fixed
+
+- **Graceful provider degradation**: when a critic's provider fails mid-run
+  (bad key, rate limit, timeout), Proserpina now tries reassigning to another
+  authed provider, and if all fail for that persona, skips the critic and
+  continues with the rest. Previously, a single provider failure killed the
+  entire run. Skipped critics are noted in the report.
+
+[0.2.1]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.2.1
 
 ## [0.2.0] — 2026-06-28
 
@@ -23,7 +95,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   errors, new subcommands (auth, panels).
 
 [0.2.0]: https://github.com/Industrial-Algebra/Proserpina/releases/tag/v0.2.0
-
 
 ## [0.1.0] — 2026-06-23
 
