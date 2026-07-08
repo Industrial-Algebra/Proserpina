@@ -42,6 +42,7 @@ fn run_critique_errors_when_no_provider_keys_are_set() {
         None,
         proserpina::backend::http::RetryPolicy::NONE,
         None,
+        &[],
     );
     let err = result.expect_err("no keys set -> should error");
     let msg = format!("{err}");

@@ -47,10 +47,13 @@ Moonshot, Alibaba, and Google. The summarizer then tells you where the panel
 ## Quick start
 
 ```bash
-cargo install proserpina
+cargo install proserpina --features cli,backend-http,json
 
-# Set one provider key (DeepSeek is the zero-config default)...
-export DEEPSEEK_API_KEY=sk-...
+# Authenticate with a provider (interactive)...
+proserpina auth login deepseek
+
+# Pin a model version at login (optional)
+proserpina auth login openai --model gpt-5.5
 
 # ...and cross-examine a document.
 proserpina critique roadmap.md
@@ -81,9 +84,9 @@ Add `--json` for machine-readable output; `--seed N` to reproduce a run exactly.
 
 ## Configuration
 
-Providers, persona panels, and retry policy live in a single TOML file at
-`~/.config/proserpina/credentials.toml` (overridable via `PROSERPINA_CONFIG` or
-`--config`):
+Providers, persona panels, retry policy, model overrides, and exclusions
+live in a single TOML file at `~/.config/proserpina/credentials.toml`
+(overridable via `PROSERPINA_CONFIG` or `--config`):
 
 ```toml
 # Auth: a section per provider. Env vars also work (DEEPSEEK_API_KEY etc).
@@ -94,6 +97,13 @@ api_key = "sk-..."
 api_key = "..."
 base_url = "https://api.z.ai/api/coding/paas/v4"   # coding-plan gateway
 model = "glm-5.2"
+
+# Model override: pin a specific version for any provider.
+[openai]
+model = "gpt-5.5"
+
+# Exclude a model from the roster (e.g. billing lapsed, model retired).
+exclude = ["qwen3.7-max"]
 
 # Panels: built-in (default/duo/panel) or custom.
 [panels.red-team]
@@ -121,6 +131,16 @@ supply `base_url` + `model` + `api_key` in a section whose name isn't a built-in
 
 Define your own under `[panels.NAME]` (above). `--panel <name>` selects one.
 
+## Language
+
+Critique in any language the models support:
+
+```bash
+proserpina critique doc.md --panel panel --language Japanese
+```
+
+Omitting `--language` lets the model infer from the document's language.
+
 ## Agent integration
 
 Proserpina is designed to be called on the fly by AI agents across your dev
@@ -129,7 +149,10 @@ environments. The full loop:
 | Move | Command |
 |---|---|
 | What can you do, right now? | `proserpina capabilities` |
+| Authenticate a provider | `proserpina auth login <provider> [--model <name>]` |
+| Validate keys | `proserpina auth check` |
 | What would this run do / cost? | `proserpina critique doc.md --dry-run --seed N` |
+| Exclude a provider model | `proserpina critique doc.md --exclude qwen3.7-max` |
 | Do it (structured) | `proserpina critique doc.md --json` |
 | What went wrong? | structured JSON on stderr + exit code |
 

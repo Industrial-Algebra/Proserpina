@@ -65,6 +65,9 @@ impl AuthStore {
                 api_key: Some(key.to_owned()),
                 model: None,
                 base_url: None,
+                oauth_access: None,
+                oauth_refresh: None,
+                oauth_expires: None,
             },
         );
         self.save()
@@ -79,26 +82,30 @@ impl AuthStore {
         refresh: &str,
         expires_ms: u64,
     ) -> Result<(), ProserpinaError> {
-        // Store OAuth as a custom-format override with the access token as the api_key.
-        // The refresh token + expiry go in extra fields that the resolution layer
-        // reads for refresh.
-        // For now: store the access token as api_key; refresh logic reads it.
-        // TODO: extend ProviderOverride or Credentials to carry OAuth refresh+expires.
         self.credentials.set_override(
             provider_name,
             ProviderOverride {
-                api_key: Some(access.to_owned()),
+                api_key: None,
                 model: None,
                 base_url: None,
+                oauth_access: Some(access.to_owned()),
+                oauth_refresh: Some(refresh.to_owned()),
+                oauth_expires: Some(expires_ms),
             },
         );
-        let _ = (refresh, expires_ms); // will be stored when ProviderOverride is extended
         self.save()
     }
 
     /// Removes a provider's credentials.
     pub fn remove(&mut self, provider_name: &str) -> Result<(), ProserpinaError> {
         self.credentials.remove_override(provider_name);
+        self.save()
+    }
+
+    /// Stores a model override for a provider (merges into existing entry,
+    /// preserving api_key/oauth fields).
+    pub fn store_model(&mut self, provider_name: &str, model: &str) -> Result<(), ProserpinaError> {
+        self.credentials.merge_model(provider_name, model);
         self.save()
     }
 
@@ -112,5 +119,83 @@ impl AuthStore {
     /// Returns the resolved authed configs (delegates to the existing resolution).
     pub fn authed_configs(&self) -> Result<Vec<HttpConfig>, ProserpinaError> {
         crate::backend::credentials::authed_configs_with(None)
+    }
+
+    /// Checks all stored OAuth credentials and refreshes any that are expired.
+    /// Called at startup (before a run) to ensure tokens are fresh.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ProserpinaError`] if the store can't be read. Individual
+    /// refresh failures are logged and skipped (the provider just won't be
+    /// authed).
+    pub fn refresh_expired_oauth(&mut self) -> Result<(), ProserpinaError> {
+        use crate::auth::oauth::refresh_token;
+        use crate::auth::{auth_registry, AuthMethod};
+
+        let now_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
+        let mut changed = false;
+
+        // Collect provider names that need refresh (can't mutate while iterating).
+        let to_refresh: Vec<String> = self
+            .credentials
+            .iter()
+            .filter(|(_, ov)| ov.oauth_expires.is_some_and(|exp| exp <= now_ms))
+            .filter(|(_, ov)| ov.oauth_refresh.is_some())
+            .map(|(name, _)| name.clone())
+            .collect();
+
+        for name in to_refresh {
+            let ov = self.credentials.override_for(&name).cloned();
+            let Some(ov) = ov else { continue };
+            let Some(refresh_tok) = &ov.oauth_refresh else {
+                continue;
+            };
+
+            // Find the provider's auth config to get client_id + token_url.
+            let provider_auth = auth_registry().iter().find(|p| p.name == name);
+            let (client_id, token_url) = if let Some(pa) = provider_auth {
+                if let AuthMethod::OAuth {
+                    client_id,
+                    token_url,
+                    ..
+                } = &pa.method
+                {
+                    (*client_id, *token_url)
+                } else {
+                    continue; // not an OAuth provider
+                }
+            } else {
+                continue; // unknown provider
+            };
+
+            eprintln!("proserpina: refreshing {name} OAuth token...");
+            match refresh_token(token_url, client_id, refresh_tok) {
+                Ok(tokens) => {
+                    // Update the stored override with fresh tokens.
+                    let mut new_ov = ov.clone();
+                    new_ov.oauth_access = Some(tokens.access);
+                    new_ov.oauth_refresh = Some(tokens.refresh);
+                    new_ov.oauth_expires = Some(tokens.expires_ms);
+                    self.credentials.set_override(&name, new_ov);
+                    changed = true;
+                    eprintln!("proserpina: ✓ {name} token refreshed.");
+                }
+                Err(e) => {
+                    eprintln!("proserpina: ✗ {name} token refresh failed: {e}");
+                    // Leave the stale token in place; it will fail at call time
+                    // and the graceful-degradation logic will handle it.
+                }
+            }
+        }
+
+        if changed {
+            self.save()?;
+        }
+        Ok(())
     }
 }

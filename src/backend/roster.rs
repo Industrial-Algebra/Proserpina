@@ -135,7 +135,7 @@ impl Provider {
                     .with_key_env_var("DEEPSEEK_API_KEY"),
                 Provider::new("openai")
                     .with_base_url("https://api.openai.com/v1")
-                    .with_model("gpt-4o")
+                    .with_model("gpt-5.4")
                     .with_key_env_var("OPENAI_API_KEY"),
                 Provider::new("moonshot")
                     .with_base_url("https://api.moonshot.cn/v1")

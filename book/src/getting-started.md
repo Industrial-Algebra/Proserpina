@@ -16,16 +16,28 @@ cargo install --path . --features cli,backend-http,json
 
 ## Authenticate one provider
 
-The zero-config path: export a DeepSeek key.
+The zero-config path: log in interactively.
 
 ```bash
-export DEEPSEEK_API_KEY=sk-...
+proserpina auth login deepseek
 ```
 
-(Any of `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`, `MOONSHOT_API_KEY`,
-`DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `GOOGLE_API_KEY` works. For providers pi
-mediates via OAuth/extensions, put the key in
-[~/.config/proserpina/credentials.toml](./providers.md) instead.)
+This prompts for your API key, validates it, and stores it in
+`~/.config/proserpina/credentials.toml` (or the OS keychain if the `keyring`
+feature is on).
+
+For OpenAI (ChatGPT), an OAuth browser flow is used:
+
+```bash
+proserpina auth login openai
+
+# Or pin a specific model during login:
+proserpina auth login openai --model gpt-5.5
+```
+
+Or set an env var directly (any of `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`,
+`MOONSHOT_API_KEY`, `DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `GOOGLE_API_KEY`
+works). If pi is installed, Proserpina auto-discovers pi's provider configs.
 
 ## Critique a document
 
@@ -47,6 +59,20 @@ proserpina critique roadmap.md --panel panel
 Methodologist, Red Team, Domain Expert, Editor), fanned across your authed
 providers. The summarizer clusters their critiques — you'll see findings
 "raised by" multiple critics where the panel converged.
+
+## Exclude a provider
+
+To temporarily disable a model from the roster (e.g. billing lapsed):
+
+```bash
+proserpina critique doc.md --exclude qwen3.7-max
+```
+
+Or persist the exclusion in `~/.config/proserpina/credentials.toml`:
+
+```toml
+exclude = ["qwen3.7-max", "mercury-2"]
+```
 
 ## Reproduce or automate
 

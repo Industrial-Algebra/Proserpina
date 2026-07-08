@@ -7,7 +7,7 @@
 > explorations and known gaps, **not commitments**. See
 > [CHANGELOG.md](../CHANGELOG.md) for the full v0.1.0 feature list.
 
-**Version:** 0.1.0 — Foundation complete. IA-conformant. Dual-licensed.
+**Version:** 0.3.0 — Auth subsystem complete. 152 tests, clippy clean.
 **Gitflow:** `main` (releases) ← `develop` (integration) ← `feature/*` (work)
 
 ---
@@ -16,11 +16,26 @@
 
 Proserpina is a provider-agnostic multi-agent critique pipeline. It is synchronous,
 testable end-to-end via the echo backend (zero LLM deps), and reaches six
-frontier providers (DeepSeek, Z.ai GLM, OpenAI, Moonshot, Alibaba, Google) plus
-any custom OpenAI-compatible endpoint. 136 tests, zero warnings across all
+frontier providers (DeepSeek, Z.ai GLM, OpenAI, Moonshot, Alibaba, Google)
+plus any custom OpenAI-compatible endpoint. 152 tests, zero warnings across all
 feature combinations, `cargo publish --dry-run` clean.
 
-**Completed for v0.1.0:**
+**Completed for v0.3.0:**
+- ✅ **Auth subsystem**: `proserpina auth login <provider>` (interactive API key + OAuth PKCE), `auth check`, `auth list`, `auth logout`. Token storage + auto-refresh lifecycle.
+- ✅ **AuthUi trait seam**: ratatui now, Knopper later (zero logic changes).
+- ✅ **Model override at login**: `auth login --model gpt-5.5` pins the version.
+- ✅ **Provider exclusion**: `exclude = [...]` in config + `--exclude` CLI flag.
+  Disable a model from the roster (billing lapsed, model retired).
+- ✅ **Host-based provider dedup**: pi configs replace registry entries for same
+  host; prevents double-weighting a provider (e.g. deepseek-chat + deepseek-v4-pro).
+- ✅ **OpenAI default bumped** to gpt-5.4 (registry).
+- ✅ **Pi provider discovery**: auto-reads pi's models.json + auth.json (convenience layer).
+- ✅ **`--language` flag**: output in any supported language.
+- ✅ **Human-readable CLI**: capabilities table, progress output, actionable errors.
+- ✅ **Expanded HTTP test suite**: 148 tests covering retry, degradation, timeout,
+  backoff, and graceful-failure edge cases.
+
+**Completed for v0.1.0–v0.2.1:**
 - ✅ Interaction-graph engine (`parallel`, `rounds`) with convergence early-stop
 - ✅ Provider-agnostic `Agent` trait; echo + HTTP backends
 - ✅ Multi-provider roster (seeded, reproducible) + standalone credentials config
@@ -73,8 +88,10 @@ is committed to a version.
   workaround more loudly).
 - **Credentials file permissions check** — warn if world-readable.
 - **Ollama as a first-class preset** — common local-LLM case.
-- **`proserpina auth` CLI flow** — interactive `proserpina auth set <provider>` that
-  writes the keychain, so users don't have to use a separate tool.
+- **Full ratatui TUI** — the auth login UI is currently stdin-based; a proper
+  ratatui list widget is planned (behind the AuthUi trait seam for Knopper
+  migration).
+- **Device-code flow** — for headless machines without a browser.
 
 ---
 
