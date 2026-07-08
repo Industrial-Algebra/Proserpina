@@ -30,6 +30,9 @@ For OpenAI (ChatGPT), an OAuth browser flow is used:
 
 ```bash
 proserpina auth login openai
+
+# Or pin a specific model during login:
+proserpina auth login openai --model gpt-5.5
 ```
 
 Or set an env var directly (any of `DEEPSEEK_API_KEY`, `OPENAI_API_KEY`,
@@ -56,6 +59,20 @@ proserpina critique roadmap.md --panel panel
 Methodologist, Red Team, Domain Expert, Editor), fanned across your authed
 providers. The summarizer clusters their critiques — you'll see findings
 "raised by" multiple critics where the panel converged.
+
+## Exclude a provider
+
+To temporarily disable a model from the roster (e.g. billing lapsed):
+
+```bash
+proserpina critique doc.md --exclude qwen3.7-max
+```
+
+Or persist the exclusion in `~/.config/proserpina/credentials.toml`:
+
+```toml
+exclude = ["qwen3.7-max", "mercury-2"]
+```
 
 ## Reproduce or automate
 
