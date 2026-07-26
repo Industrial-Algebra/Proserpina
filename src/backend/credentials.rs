@@ -51,22 +51,11 @@ pub struct PanelConfig {
     pub personas: Vec<PersonaSpec>,
 }
 
-/// The `[retry]` section of the config file. All fields optional; missing
-/// fields fall back to [`crate::backend::http::RetryPolicy::DEFAULT`] at
-/// resolution time.
-#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
-pub struct RetryConfig {
-    /// Total tries including the first.
-    pub max_attempts: Option<u32>,
-    /// Per-attempt socket+read timeout, in seconds.
-    pub timeout_secs: Option<u64>,
-    /// Backoff before the second attempt, in milliseconds.
-    pub initial_backoff_ms: Option<u64>,
-    /// Exponential growth factor between backoffs.
-    pub backoff_factor: Option<f64>,
-    /// Cap on any single backoff, in milliseconds.
-    pub max_backoff_ms: Option<u64>,
-}
+/// The `[retry]` section of the config file, re-exported from
+/// `proserpina-agent` (where [`RetryPolicy`](crate::backend::http::RetryPolicy)
+/// lives). All fields optional; missing fields fall back to
+/// [`crate::backend::http::RetryPolicy::DEFAULT`] at resolution time.
+pub use proserpina_agent::http::RetryConfig;
 
 /// One persona in a config-defined panel.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]

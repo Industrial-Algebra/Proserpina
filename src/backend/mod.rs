@@ -20,7 +20,7 @@ pub use proserpina_agent::echo;
 pub mod credentials;
 
 #[cfg(feature = "backend-http")]
-pub mod http;
+pub use proserpina_agent::http;
 
 #[cfg(feature = "backend-http")]
 pub mod roster;

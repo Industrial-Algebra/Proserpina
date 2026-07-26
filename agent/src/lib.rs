@@ -16,11 +16,15 @@
 pub mod agent;
 pub mod echo;
 pub mod error;
+#[cfg(feature = "backend-http")]
+pub mod http;
 pub mod message;
 pub mod persona;
 
 pub use agent::{Agent, AgentId};
 pub use echo::EchoAgent;
 pub use error::ProserpinaError;
+#[cfg(feature = "backend-http")]
+pub use http::{HttpAgent, HttpConfig, RetryConfig, RetryPolicy};
 pub use message::{Message, MessageKind};
 pub use persona::Persona;

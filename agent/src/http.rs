@@ -29,6 +29,26 @@ use crate::agent::{Agent, AgentId};
 use crate::message::{Message, MessageKind};
 use crate::persona::Persona;
 
+/// The `[retry]` section of a credentials config file. All fields optional;
+/// missing fields fall back to [`RetryPolicy::DEFAULT`] at resolution time.
+///
+/// Lives here (not in the credentials module) because [`RetryPolicy::resolve`]
+/// consumes it; the `proserpina` credentials module re-exports it so the
+/// public path `proserpina::backend::credentials::RetryConfig` is preserved.
+#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
+pub struct RetryConfig {
+    /// Total tries including the first.
+    pub max_attempts: Option<u32>,
+    /// Per-attempt socket+read timeout, in seconds.
+    pub timeout_secs: Option<u64>,
+    /// Backoff before the second attempt, in milliseconds.
+    pub initial_backoff_ms: Option<u64>,
+    /// Exponential growth factor between backoffs.
+    pub backoff_factor: Option<f64>,
+    /// Cap on any single backoff, in milliseconds.
+    pub max_backoff_ms: Option<u64>,
+}
+
 /// Retry / timeout / backoff policy for HTTP calls.
 ///
 /// Carried by [`HttpAgent`] and passed to the summarizer. [`RetryPolicy::DEFAULT`]
@@ -106,7 +126,7 @@ impl RetryPolicy {
     /// passed `--max-attempts` / `--timeout`. `retry_config` is the parsed
     /// `[retry]` section (all-`None` if absent).
     pub fn resolve(
-        retry_config: &crate::backend::credentials::RetryConfig,
+        retry_config: &RetryConfig,
         cli_max_attempts: Option<u32>,
         cli_timeout_secs: Option<u64>,
     ) -> Self {
