@@ -420,6 +420,11 @@ fn build_request_body(model: &str, messages: &[ChatMessage]) -> serde_json::Valu
 /// message into a chat conversation, POSTs it to the completions endpoint,
 /// and parses the reply into a [`Message`] whose kind follows the adversarial
 /// contract (Critique for a Prompt, Rebuttal for a Critique, else mirrored).
+///
+/// `respond` is synchronous: this agent owns an internal tokio runtime and
+/// `block_on`s inside it. Async consumers must call it via
+/// `tokio::task::spawn_blocking` — see
+/// `docs/adrs/ADR-001-sync-agent-in-async-daemon.md` (Ijima-validated).
 pub struct HttpAgent {
     id: AgentId,
     persona: Persona,
