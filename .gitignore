@@ -8,3 +8,4 @@
 *.env
 credentials.toml
 secrets.toml
+.pi/

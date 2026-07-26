@@ -1,0 +1,36 @@
+# Copyright (C) 2026 Industrial Algebra
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "proserpina-agent"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Provider-agnostic LLM agent abstraction — Agent trait, Persona, Message types, and HTTP backend. The reusable core of the Proserpina critique pipeline."
+license = "Apache-2.0"
+repository = "https://github.com/industrial-algebra/Proserpina"
+homepage = "https://github.com/industrial-algebra/Proserpina"
+documentation = "https://docs.rs/proserpina-agent"
+keywords = ["llm", "agent", "provider-agnostic", "http", "abstraction"]
+categories = ["api-bindings", "asynchronous"]
+readme = "../README.md"
+
+[features]
+default = ["std"]
+std = []
+serde = ["dep:serde"]
+credentials = ["serde", "dep:toml", "dep:serde_json"]
+backend-http = ["credentials", "dep:reqwest", "dep:tokio", "dep:rand"]
+
+[dependencies]
+thiserror = "2"
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+toml = { version = "0.8", optional = true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"], optional = true }
+rand = { version = "0.9", optional = true }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["net", "rt-multi-thread", "macros", "time", "io-util"] }

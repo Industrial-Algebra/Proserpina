@@ -12,6 +12,9 @@ keywords = ["multi-agent", "critique", "peer-review", "llm", "evaluation"]
 categories = ["command-line-utilities", "text-processing", "development-tools"]
 readme = "README.md"
 
+[workspace]
+members = ["agent"]
+
 [features]
 default = ["std"]
 std = []
