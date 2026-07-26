@@ -14,6 +14,8 @@
 //! pipeline, CLI, or auth subsystem.
 
 pub mod agent;
+#[cfg(feature = "credentials")]
+pub mod credentials;
 pub mod echo;
 pub mod error;
 #[cfg(feature = "backend-http")]
@@ -22,9 +24,11 @@ pub mod message;
 pub mod persona;
 
 pub use agent::{Agent, AgentId};
+#[cfg(feature = "credentials")]
+pub use credentials::{Credentials, HttpConfig, Provider, resolve_configs};
 pub use echo::EchoAgent;
 pub use error::ProserpinaError;
 #[cfg(feature = "backend-http")]
-pub use http::{HttpAgent, HttpConfig, RetryConfig, RetryPolicy};
+pub use http::{HttpAgent, RetryConfig, RetryPolicy};
 pub use message::{Message, MessageKind};
 pub use persona::Persona;

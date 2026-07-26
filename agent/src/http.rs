@@ -29,25 +29,7 @@ use crate::agent::{Agent, AgentId};
 use crate::message::{Message, MessageKind};
 use crate::persona::Persona;
 
-/// The `[retry]` section of a credentials config file. All fields optional;
-/// missing fields fall back to [`RetryPolicy::DEFAULT`] at resolution time.
-///
-/// Lives here (not in the credentials module) because [`RetryPolicy::resolve`]
-/// consumes it; the `proserpina` credentials module re-exports it so the
-/// public path `proserpina::backend::credentials::RetryConfig` is preserved.
-#[derive(Debug, Clone, Default, PartialEq, serde::Deserialize)]
-pub struct RetryConfig {
-    /// Total tries including the first.
-    pub max_attempts: Option<u32>,
-    /// Per-attempt socket+read timeout, in seconds.
-    pub timeout_secs: Option<u64>,
-    /// Backoff before the second attempt, in milliseconds.
-    pub initial_backoff_ms: Option<u64>,
-    /// Exponential growth factor between backoffs.
-    pub backoff_factor: Option<f64>,
-    /// Cap on any single backoff, in milliseconds.
-    pub max_backoff_ms: Option<u64>,
-}
+pub use crate::credentials::RetryConfig;
 
 /// Retry / timeout / backoff policy for HTTP calls.
 ///
@@ -421,20 +403,7 @@ pub fn parse_completion_response(
     Ok(Message::new(author, None, kind, content.to_owned()))
 }
 
-/// Configuration for an [`HttpAgent`]: where to call and how to authenticate.
-///
-/// Works with any OpenAI-compatible chat-completions endpoint.
-#[derive(Debug, Clone)]
-pub struct HttpConfig {
-    /// The base URL of the API (without `/chat/completions`). For DeepSeek:
-    /// `https://api.deepseek.com/v1`.
-    pub base_url: String,
-    /// The model to request, e.g. `deepseek-chat`, `gpt-4o-mini`.
-    pub model: String,
-    /// The API key. Read from the environment (e.g. `DEEPSEEK_API_KEY`) at
-    /// call sites, not hard-coded.
-    pub api_key: String,
-}
+pub use crate::credentials::HttpConfig;
 
 /// Builds the JSON body for a chat-completions request.
 fn build_request_body(model: &str, messages: &[ChatMessage]) -> serde_json::Value {
