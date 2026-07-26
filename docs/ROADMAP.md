@@ -28,12 +28,14 @@ crate.
 
 Plan: `docs/plans/2026-07-26-proserpina-agent-extraction.md`
 
-- proserpina-agent crate: `Agent` trait + `Persona` + `Message` types +
+- ✅ proserpina-agent crate: `Agent` trait + `Persona` + `Message` types +
   `EchoAgent` + `HttpAgent`, extracted into a standalone crate.
-  Zero breaking changes — `proserpina` re-exports the full surface.
-- `credentials` feature: daemon-friendly pure config resolution
+  Zero breaking changes — `proserpina` re-exports the full surface
+  (155 tests: the original 152 + 3 new standalone credentials tests).
+- ✅ `credentials` feature: daemon-friendly pure config resolution
   (serde+toml only — no filesystem/env/keyring/HTTP-client deps).
-- ADR-001: sync-trait-in-async-daemon pattern (`spawn_blocking` + internal
+  `HttpConfig` + `RetryConfig` live here as data, no HTTP client required.
+- ✅ ADR-001: sync-trait-in-async-daemon pattern (`spawn_blocking` + internal
   tokio runtime), validated in production by Ijima.
 - Stability commitment: no breaking changes to the `Agent` trait through 0.4.x.
 - Post-publish: Ijima migration PR (`proserpina` → `proserpina-agent`).
