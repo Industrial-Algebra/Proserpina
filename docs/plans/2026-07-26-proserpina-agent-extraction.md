@@ -496,48 +496,17 @@ git commit -m "docs: ADR-001 sync Agent trait in async daemons (Ijima-validated 
 
 ---
 
-### Task 8: Re-scope ROADMAP.md for v0.4.0
+### Task 8: Verify ROADMAP consistency
 
-**TDD scenario:** Documentation only.
+**TDD scenario:** Documentation check only.
 
-**Files:**
-- Modify: `docs/ROADMAP.md`
-
-**Step 1: Rewrite the v0.4.0 section**
-
-Replace the v0.4.0 wishlist (Moderated topology, parallel execution, Knopper migration as headline items) with consumer-driven scope:
-
-```markdown
-## v0.4.0 — Consumer-Driven (proserpina-agent extraction)
-
-Theme: serve the consumers that actually exist. Ijima (production, mining
-tier) uses the Agent abstraction layer, not the critique pipeline.
-
-- [x] proserpina-agent crate: Agent trait + Persona + Message + EchoAgent +
-  HttpAgent + credential-resolution core, extracted into a standalone crate
-- [x] `credentials` feature: daemon-friendly pure config resolution
-  (no filesystem/env/keyring/HTTP-client deps)
-- [x] ADR-001: sync-trait-in-async-daemon pattern (Ijima-validated)
-- [ ] Stability commitment: no breaking changes to `Agent` trait through 0.4.x
-- [ ] Ijima migration guide: depend on proserpina-agent directly
-  (slimmer dep tree, faster compiles)
-
-## v0.5.0+ — Pipeline evolution (deferred, consumer-triggered)
-
-- Moderated topology (Socratic dialectic) — build when a panel-critique
-  consumer emerges; Ijima explicitly does not need it (ADR M5)
-- Parallel execution / batch critique
-- Knopper TUI migration (AuthUi seam exists; waiting on Knopper)
-- Per-persona provider pinning
-- Streaming output
-```
-
-**Step 2: Commit**
-
-```bash
-git add docs/ROADMAP.md
-git commit -m "docs: re-scope v0.4.0 around consumer needs (Ijima), defer panel features"
-```
+**NOTE:** The ROADMAP rewrite this task originally prescribed was completed
+early, in the 2026-07-26 roadmap session (same branch) — and went further:
+it established the full version sequencing **v0.4.0 Extraction → v0.5.0
+Validation (eval harness) → v0.6.0+ Pipeline evolution**. The executor of
+this plan only needs to verify that `docs/ROADMAP.md`'s v0.4.0 section still
+accurately reflects what was actually shipped (check off completed items,
+correct anything the implementation changed). Do NOT re-rewrite it.
 
 ---
 
