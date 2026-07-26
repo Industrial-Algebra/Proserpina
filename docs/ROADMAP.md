@@ -53,6 +53,21 @@ or just more words?* The architecture enables the experiment; v0.5.0 runs it.
   "3 cheap vs. 1 expensive" comparison needs token accounting).
 - **Severity rubric**: a documented rubric in the summarizer prompt so
   severity calibration is consistent across models (research question #1).
+- **Translation-panel validation domain** — a built-in `translation` panel
+  preset (fidelity keeper, native-fluency editor, scholarly editor,
+  poet/author, terminology consistency) critiquing machine translations
+  *against their source texts*. The adversarial structure is intrinsic:
+  fidelity vs. fluency is translation's classic dialectic, and `rounds`
+  maps onto it without contrivance. Ground truth is cheap (native-speaker
+  judgment), making this the cleanest quantitative answer to the Rabbit
+  Hole question available today. Concrete first experiment: the Karpal
+  mdbook Japanese translation (glm-5.2 single-pass; native review: "accurate
+  but 1:1 literal, no native flavor") — run the panel, apply revisions,
+  blind re-rate by the same reviewer. The control group already exists.
+  (Panel preset is config-level — personas are data. Subject pairing works
+  today by concatenating source+translation into the subject body; a
+  `--source` convenience flag is v0.6.0 pipeline work if the domain
+  validates.)
 - **Diversity measurement**: the harness's corroboration data answers whether
   panel diversity improves critique vs. a homogeneous panel (question #2).
 - **Convergence semantics**: rounds-topology runs in the harness produce the
@@ -75,6 +90,8 @@ workflow (or a second consumer) demands them.
 - **Per-persona provider pinning** and **`[personas.NAME]` reusable personas**.
 - **Report rendering**: consensus-vs-contested highlighting, per-critic
   attribution view.
+- **Translation workflow support** (`--source` flag, paired-subject handling)
+  — if the v0.5.0 translation-panel experiment validates the domain.
 - **`capabilities` schema versioning** — when downstream agents depend on the
   shape.
 
