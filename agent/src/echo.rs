@@ -41,7 +41,7 @@ impl EchoAgent {
     /// # Examples
     ///
     /// ```
-    /// use proserpina::{Agent, AgentId, EchoAgent, Persona};
+    /// use proserpina_agent::{Agent, AgentId, EchoAgent, Persona};
     /// let agent = EchoAgent::new(
     ///     AgentId::new("methodologist"),
     ///     Persona::new("Methodologist"),

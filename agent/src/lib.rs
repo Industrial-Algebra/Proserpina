@@ -14,11 +14,13 @@
 //! pipeline, CLI, or auth subsystem.
 
 pub mod agent;
+pub mod echo;
 pub mod error;
 pub mod message;
 pub mod persona;
 
 pub use agent::{Agent, AgentId};
+pub use echo::EchoAgent;
 pub use error::ProserpinaError;
 pub use message::{Message, MessageKind};
 pub use persona::Persona;
