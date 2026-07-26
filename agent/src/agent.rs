@@ -20,7 +20,7 @@ impl AgentId {
     /// # Examples
     ///
     /// ```
-    /// use proserpina::AgentId;
+    /// use proserpina_agent::AgentId;
     /// let id = AgentId::new("methodologist");
     /// assert_eq!(id.as_str(), "methodologist");
     /// ```

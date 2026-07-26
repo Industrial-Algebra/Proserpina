@@ -19,6 +19,8 @@ readme = "../README.md"
 default = ["std"]
 std = []
 serde = ["dep:serde"]
+json = ["serde", "dep:serde_json"]       # structured error JSON (to_error_json)
+keyring = []                             # KeyringAccess error variant (the keychain itself lives in proserpina)
 credentials = ["serde", "dep:toml", "dep:serde_json"]
 backend-http = ["credentials", "dep:reqwest", "dep:tokio", "dep:rand"]
 

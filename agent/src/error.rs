@@ -93,7 +93,7 @@ impl ProserpinaError {
     /// # Examples
     ///
     /// ```
-    /// use proserpina::ProserpinaError;
+    /// use proserpina_agent::ProserpinaError;
     /// let err = ProserpinaError::agent_failure("claude-1", "rate limited");
     /// assert!(format!("{err}").contains("claude-1"));
     /// ```
@@ -109,7 +109,7 @@ impl ProserpinaError {
     /// # Examples
     ///
     /// ```
-    /// use proserpina::{AgentId, ProserpinaError};
+    /// use proserpina_agent::{AgentId, ProserpinaError};
     /// let err = ProserpinaError::missing_agent(AgentId::new("ghost"));
     /// assert!(format!("{err}").contains("ghost"));
     /// ```
@@ -122,7 +122,7 @@ impl ProserpinaError {
     /// # Examples
     ///
     /// ```
-    /// use proserpina::ProserpinaError;
+    /// use proserpina_agent::ProserpinaError;
     /// let err = ProserpinaError::no_authed_providers(vec!["deepseek".to_owned()]);
     /// assert!(format!("{err}").contains("deepseek"));
     /// ```

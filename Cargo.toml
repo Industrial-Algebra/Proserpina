@@ -20,13 +20,14 @@ default = ["std"]
 std = []
 # Additive capability features (landed incrementally via TDD):
 cli = ["dep:clap"]                   # `proserpina` binary + clap command line interface
-serde = ["dep:serde"]                # Serialize/Deserialize impls for core types
-json = ["serde", "dep:serde_json"]   # machine-readable JSON report output
+serde = ["dep:serde", "proserpina-agent/serde"]  # Serialize/Deserialize impls for core types
+json = ["serde", "dep:serde_json", "proserpina-agent/json"]   # machine-readable JSON report output
 backend-http = ["serde", "dep:reqwest", "dep:tokio", "dep:serde_json", "dep:rand", "dep:toml", "dep:base64", "dep:sha2", "dep:hex", "dep:webbrowser"]  # OpenAI-compatible HTTP agent + multi-provider roster + credentials config + auth
-keyring = ["dep:keyring", "backend-http"]  # OS keychain credential tier (keyring > env > config > registry); works on macOS Keychain + Windows Credential Manager, Linux gnome-keyring has a known limitation
+keyring = ["dep:keyring", "backend-http", "proserpina-agent/keyring"]  # OS keychain credential tier (keyring > env > config > registry); works on macOS Keychain + Windows Credential Manager, Linux gnome-keyring has a known limitation
 # parallel = ["dep:rayon"]           # batch critique via rayon (future)
 
 [dependencies]
+proserpina-agent = { version = "0.1.0", path = "agent" }
 thiserror = "2"
 clap = { version = "4", features = ["derive"], optional = true }
 serde = { version = "1", features = ["derive"], optional = true }

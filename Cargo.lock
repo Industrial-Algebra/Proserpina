@@ -936,6 +936,7 @@ dependencies = [
  "clap",
  "hex",
  "keyring",
+ "proserpina-agent",
  "rand",
  "reqwest",
  "serde",

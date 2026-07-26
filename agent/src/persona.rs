@@ -24,7 +24,7 @@ impl Persona {
     /// # Examples
     ///
     /// ```
-    /// use proserpina::Persona;
+    /// use proserpina_agent::Persona;
     /// let p = Persona::new("Devil's Advocate");
     /// assert_eq!(p.name(), "Devil's Advocate");
     /// assert_eq!(p.framing(), None);
@@ -79,8 +79,9 @@ impl Persona {
     /// The built-in archetype personas, in canonical order: Devil's Advocate,
     /// Methodologist, Red Team, Domain Expert, Editor.
     ///
-    /// These back the built-in [`Panel`] presets (`duo`, `panel`) and are
-    /// available as data for user-defined panels.
+    /// These back the built-in panel presets (`duo`, `panel`) in the
+    /// `proserpina` critique pipeline and are available as data for
+    /// user-defined panels.
     pub fn archetypes() -> &'static [Persona] {
         static ARCHETYPES: std::sync::OnceLock<Vec<Persona>> = std::sync::OnceLock::new();
         ARCHETYPES.get_or_init(|| {
@@ -105,92 +106,3 @@ impl Persona {
     }
 }
 
-/// A built-in named panel preset.
-///
-/// `Default` is the single-Devil's-Advocate panel (back-compat); `Duo` adds
-/// the Methodologist; `Panel` is the full five-critic cross-examination panel.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Panel {
-    /// Single Devil's Advocate (the historical default).
-    Default,
-    /// Devil's Advocate + Methodologist.
-    Duo,
-    /// All five archetypes.
-    Panel,
-}
-
-impl Panel {
-    /// The personas in this preset, in canonical order.
-    pub fn personas(&self) -> Vec<Persona> {
-        let archetypes = Persona::archetypes();
-        match self {
-            Panel::Default => vec![archetypes[0].clone()],
-            Panel::Duo => vec![archetypes[0].clone(), archetypes[1].clone()],
-            Panel::Panel => archetypes.to_vec(),
-        }
-    }
-
-    /// Parses a built-in panel by name (case-insensitive).
-    ///
-    /// Returns `None` for unknown names so the caller can fall through to
-    /// config-defined panels.
-    pub fn from_name(name: &str) -> Option<Self> {
-        match name.to_lowercase().as_str() {
-            "default" => Some(Panel::Default),
-            "duo" => Some(Panel::Duo),
-            "panel" => Some(Panel::Panel),
-            _ => None,
-        }
-    }
-
-    /// The canonical name of this preset.
-    pub fn name(&self) -> &'static str {
-        match self {
-            Panel::Default => "default",
-            Panel::Duo => "duo",
-            Panel::Panel => "panel",
-        }
-    }
-}
-
-/// Resolves a panel name to its personas.
-///
-/// Order: a config-defined panel under `[panels.NAME]` overrides a same-named
-/// built-in; otherwise built-in presets (`default`/`duo`/`panel`) are used; an
-/// unknown name yields [`ProserpinaError::UnknownPanel`] listing what *was*
-/// available (built-ins + config sections).
-///
-/// Pure given the credentials config — unit-testable without env or IO.
-///
-/// # Errors
-///
-/// Returns [`ProserpinaError::UnknownPanel`] if `name` is neither built-in nor in
-/// `credentials.panels()`.
-#[cfg(feature = "backend-http")]
-pub fn resolve_panel(
-    name: &str,
-    credentials: &crate::backend::credentials::Credentials,
-) -> Result<Vec<Persona>, ProserpinaError> {
-    // 1. Config-defined panel (overrides built-in of the same name).
-    if let Some(panel) = credentials.panels().get(name) {
-        return Ok(panel.personas.iter().map(|s| s.to_persona()).collect());
-    }
-
-    // 2. Built-in preset.
-    if let Some(preset) = Panel::from_name(name) {
-        return Ok(preset.personas());
-    }
-
-    // 3. Unknown — list what was available.
-    let mut available: Vec<String> = vec!["default", "duo", "panel"]
-        .into_iter()
-        .map(String::from)
-        .collect();
-    for n in credentials.panels().keys() {
-        available.push(n.clone());
-    }
-    Err(ProserpinaError::unknown_panel(name, available))
-}
-
-#[cfg(feature = "backend-http")]
-use crate::error::ProserpinaError;

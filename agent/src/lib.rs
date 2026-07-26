@@ -13,5 +13,12 @@
 //! mining tier) can depend on the agent layer without the critique
 //! pipeline, CLI, or auth subsystem.
 
-// Modules land here incrementally as the extraction proceeds
-// (see docs/plans/2026-07-26-proserpina-agent-extraction.md).
+pub mod agent;
+pub mod error;
+pub mod message;
+pub mod persona;
+
+pub use agent::{Agent, AgentId};
+pub use error::ProserpinaError;
+pub use message::{Message, MessageKind};
+pub use persona::Persona;
