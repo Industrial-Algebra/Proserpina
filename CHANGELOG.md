@@ -4,6 +4,48 @@ All notable changes to Proserpina are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+_Nothing yet._
+
+## [0.4.0] — 2026-08-10
+
+### Added — proserpina-agent extraction
+
+The reusable agent abstraction layer is now its own crate, so daemon
+consumers (Ijima) can depend on it without the critique pipeline, CLI, or
+auth subsystem. Ijima's entire integration surface — `Agent`, `AgentId`,
+`Message`, `MessageKind`, `Persona`, `ProserpinaError`, `HttpAgent`,
+`HttpConfig` — resolves against `proserpina-agent` standalone (proven by
+`agent/tests/ijima_surface.rs`).
+
+- **`proserpina-agent` v0.1.0**: new workspace member crate with `Agent`
+  trait + `Persona` + `Message` types + `EchoAgent` (deterministic test
+  oracle) + `HttpAgent` (OpenAI-compatible, behind `backend-http`).
+- **`credentials` feature** (in `proserpina-agent`): daemon-friendly pure
+  credential resolution — `Provider` registry, `Credentials`, `HttpConfig`,
+  and `resolve_configs` / `resolve_configs_with_keyring` take explicit
+  snapshots (no filesystem, environment, keychain, or HTTP-client deps).
+- **`json` / `keyring` features** (in `proserpina-agent`): carry the
+  error-variant cfg gates so `ProserpinaError` is identical across crates.
+- **ADR-001**: the sync-trait-in-async-daemon pattern (`spawn_blocking` +
+  internal tokio runtime), validated in production by Ijima. `HttpAgent`'s
+  docstring links to it.
+
+### Changed
+
+- **Zero breaking changes.** `proserpina` re-exports the full moved surface
+  from `proserpina-agent`: every existing path (`proserpina::Agent`,
+  `proserpina::backend::http::HttpAgent`,
+  `proserpina::backend::credentials::RetryConfig`,
+  `proserpina::persona::{Persona, Panel, resolve_panel}`, …) resolves
+  unchanged. 152 tests preserved; 5 new (3 daemon-surface purity + 2
+  Ijima-surface replication).
+- `Panel` + `resolve_panel` stay in `proserpina` (new `src/panels.rs`) —
+  panel presets are a critique-pipeline concern; `proserpina::persona` is a
+  shim re-exporting the agent crate's items plus the panel layer.
+
+
 ## [0.3.0] — 2026-07-07
 
 ### Added — Auth Subsystem

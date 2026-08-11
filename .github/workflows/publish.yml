@@ -21,4 +21,8 @@ jobs:
       - name: Publish
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-        run: cargo publish --all-features --locked
+        # Workspace has two crates: publish the dependency (proserpina-agent)
+        # first so it exists on crates.io before proserpina's publish resolves it.
+        run: |
+          cargo publish -p proserpina-agent --all-features --locked
+          cargo publish -p proserpina --all-features --locked

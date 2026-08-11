@@ -14,15 +14,15 @@
 //!   feature) reads provider keys and model overrides from a TOML file so
 //!   Proserpina can reach providers whose keys aren't in the environment.
 
-pub mod echo;
+pub use proserpina_agent::echo;
 
 #[cfg(feature = "backend-http")]
 pub mod credentials;
 
 #[cfg(feature = "backend-http")]
-pub mod http;
+pub use proserpina_agent::http;
 
 #[cfg(feature = "backend-http")]
 pub mod roster;
 
-pub use echo::EchoAgent;
+pub use proserpina_agent::EchoAgent;

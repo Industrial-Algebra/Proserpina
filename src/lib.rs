@@ -49,14 +49,25 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod agent;
+pub use proserpina_agent::{agent, error, message};
+
+/// Critic personas — the core [`Persona`](proserpina_agent::Persona) type is
+/// re-exported from `proserpina-agent`; the built-in panel presets and
+/// config-aware panel resolution are critique-pipeline concerns and live
+/// here.
+pub mod persona {
+    #[cfg(feature = "backend-http")]
+    pub use crate::panels::resolve_panel;
+    pub use crate::panels::Panel;
+    pub use proserpina_agent::persona::*;
+}
+
+mod panels;
+
 #[cfg(feature = "backend-http")]
 pub mod agent_info;
 pub mod backend;
-mod error;
 mod graph;
-mod message;
-pub mod persona;
 mod report;
 mod runner;
 mod subject;
@@ -68,14 +79,12 @@ pub mod summary;
 #[cfg(all(feature = "cli", feature = "backend-http"))]
 pub mod auth;
 
-pub use agent::{Agent, AgentId};
+pub use proserpina_agent::{Agent, AgentId, Message, MessageKind, Persona, ProserpinaError};
+
 #[cfg(feature = "backend-http")]
 pub use agent_info::{Capabilities, Plan, PlanSlot, ProviderInfo};
 pub use backend::EchoAgent;
-pub use error::ProserpinaError;
 pub use graph::{InteractionGraph, Topology};
-pub use message::{Message, MessageKind};
-pub use persona::Persona;
 pub use report::{Finding, Report, Severity};
 pub use runner::Runner;
 pub use subject::Subject;
