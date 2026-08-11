@@ -18,7 +18,6 @@
 
 use std::collections::HashMap;
 
-
 use crate::backend::http::HttpConfig;
 use crate::backend::roster::Provider;
 use crate::error::ProserpinaError;
@@ -30,10 +29,9 @@ use crate::error::ProserpinaError;
 /// the convenience layer that touches the environment, pi's configs, and the
 /// OS keychain.
 pub use proserpina_agent::credentials::{
-    Credentials, PanelConfig, PersonaSpec, ProviderOverride, env_var_name_for, extract_host, resolve_configs,
-    resolve_configs_with_keyring,
+    env_var_name_for, extract_host, resolve_configs, resolve_configs_with_keyring, Credentials,
+    PanelConfig, PersonaSpec, ProviderOverride,
 };
-
 
 /// The `[retry]` section of the config file, re-exported from
 /// `proserpina-agent` (where [`RetryPolicy`](crate::backend::http::RetryPolicy)
@@ -225,7 +223,6 @@ fn read_pi_auth_keys(pi_home: &str) -> HashMap<String, String> {
     }
     out
 }
-
 
 /// Maps a pi auth.json entry name to the corresponding env var name.
 /// `dashscope` -> `DASHSCOPE_API_KEY`, `zai-coding-cn` -> `ZAI_API_KEY`, etc.

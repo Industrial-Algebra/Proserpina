@@ -6,7 +6,7 @@
 
 #![cfg(feature = "credentials")]
 
-use proserpina_agent::credentials::{Credentials, Provider, resolve_configs};
+use proserpina_agent::credentials::{resolve_configs, Credentials, Provider};
 use std::collections::HashMap;
 
 #[test]

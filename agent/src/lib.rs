@@ -25,7 +25,7 @@ pub mod persona;
 
 pub use agent::{Agent, AgentId};
 #[cfg(feature = "credentials")]
-pub use credentials::{Credentials, HttpConfig, Provider, resolve_configs};
+pub use credentials::{resolve_configs, Credentials, HttpConfig, Provider};
 pub use echo::EchoAgent;
 pub use error::ProserpinaError;
 #[cfg(feature = "backend-http")]

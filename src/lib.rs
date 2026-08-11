@@ -56,10 +56,10 @@ pub use proserpina_agent::{agent, error, message};
 /// config-aware panel resolution are critique-pipeline concerns and live
 /// here.
 pub mod persona {
-    pub use proserpina_agent::persona::*;
-    pub use crate::panels::Panel;
     #[cfg(feature = "backend-http")]
     pub use crate::panels::resolve_panel;
+    pub use crate::panels::Panel;
+    pub use proserpina_agent::persona::*;
 }
 
 mod panels;
