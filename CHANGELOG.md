@@ -6,6 +6,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.4.0] — 2026-08-10
+
 ### Added — proserpina-agent extraction
 
 The reusable agent abstraction layer is now its own crate, so daemon
