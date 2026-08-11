@@ -29,6 +29,8 @@ use crate::agent::{Agent, AgentId};
 use crate::message::{Message, MessageKind};
 use crate::persona::Persona;
 
+pub use crate::credentials::RetryConfig;
+
 /// Retry / timeout / backoff policy for HTTP calls.
 ///
 /// Carried by [`HttpAgent`] and passed to the summarizer. [`RetryPolicy::DEFAULT`]
@@ -106,7 +108,7 @@ impl RetryPolicy {
     /// passed `--max-attempts` / `--timeout`. `retry_config` is the parsed
     /// `[retry]` section (all-`None` if absent).
     pub fn resolve(
-        retry_config: &crate::backend::credentials::RetryConfig,
+        retry_config: &RetryConfig,
         cli_max_attempts: Option<u32>,
         cli_timeout_secs: Option<u64>,
     ) -> Self {
@@ -401,20 +403,7 @@ pub fn parse_completion_response(
     Ok(Message::new(author, None, kind, content.to_owned()))
 }
 
-/// Configuration for an [`HttpAgent`]: where to call and how to authenticate.
-///
-/// Works with any OpenAI-compatible chat-completions endpoint.
-#[derive(Debug, Clone)]
-pub struct HttpConfig {
-    /// The base URL of the API (without `/chat/completions`). For DeepSeek:
-    /// `https://api.deepseek.com/v1`.
-    pub base_url: String,
-    /// The model to request, e.g. `deepseek-chat`, `gpt-4o-mini`.
-    pub model: String,
-    /// The API key. Read from the environment (e.g. `DEEPSEEK_API_KEY`) at
-    /// call sites, not hard-coded.
-    pub api_key: String,
-}
+pub use crate::credentials::HttpConfig;
 
 /// Builds the JSON body for a chat-completions request.
 fn build_request_body(model: &str, messages: &[ChatMessage]) -> serde_json::Value {
@@ -431,6 +420,11 @@ fn build_request_body(model: &str, messages: &[ChatMessage]) -> serde_json::Valu
 /// message into a chat conversation, POSTs it to the completions endpoint,
 /// and parses the reply into a [`Message`] whose kind follows the adversarial
 /// contract (Critique for a Prompt, Rebuttal for a Critique, else mirrored).
+///
+/// `respond` is synchronous: this agent owns an internal tokio runtime and
+/// `block_on`s inside it. Async consumers must call it via
+/// `tokio::task::spawn_blocking` — see
+/// `docs/adrs/ADR-001-sync-agent-in-async-daemon.md` (Ijima-validated).
 pub struct HttpAgent {
     id: AgentId,
     persona: Persona,

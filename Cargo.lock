@@ -936,6 +936,7 @@ dependencies = [
  "clap",
  "hex",
  "keyring",
+ "proserpina-agent",
  "rand",
  "reqwest",
  "serde",
@@ -946,6 +947,20 @@ dependencies = [
  "tokio",
  "toml",
  "webbrowser",
+]
+
+[[package]]
+name = "proserpina-agent"
+version = "0.1.0"
+dependencies = [
+ "rand",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "toml",
 ]
 
 [[package]]
